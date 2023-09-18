@@ -310,8 +310,8 @@ prefixes = ['anti','auto','de','dis','down','extra','hyper','il','im','in','ir',
 
 | first name | color                                | GitHub handle |
 |------------+--------------------------------------+---------------|
-| Eric        | green \color{green}\rule{5mm}{3mm}   | willarderic   |
-|            | yellow \color{yellow}\rule{5mm}{3mm} |               |
+| Eric       | green \color{green}\rule{5mm}{3mm}   | willarderic   |
+| Mrigdala   | yellow \color{yellow}\rule{5mm}{3mm} | Mrigdala22    |
 |            | purple \color{violet}\rule{5mm}{3mm} |               |
 
 For each person in your team, please list in order of decreasing preference
@@ -325,8 +325,8 @@ resolve any conflicts!
 | first name | first choice | second choice | third choice |
 |------------+--------------+---------------+--------------|
 | Eric       |              |               |              |
-|            |              |               |              |
-|            |              |               |              |
+| Mrigdala   |              |               |              |
+| Levi       |              |               |              |
 
 
 
@@ -345,14 +345,14 @@ in English: stick those in an example block too.
 
 
 2. [@2] How do you start emacs from the command line?
-
+Type 'emacs' in the command line to start an emacs process.
 3. How do you open a file?
-
+The command sequence C+x C+f lets you input the path to a file to open.
 4. How do you edit it?
 Put the cursor where you want to make a change and insert and/or delete
 characters from there.
 5. How do you save it?
-
+The command sequence C+x C+s saves a file.
 6. How do you get help without googling?
 
 7. How do you get out of trouble?
@@ -360,32 +360,33 @@ C+g is a command to cancel your current command, which would get you out of trou
 # second clause added <2021-10-12 Tue>
 #
 8.  How do you split the window in half horizontally, so that one half is above the other?
-
+The command C+x 2 will split the window in half horizontally.
 # second clause added <2021-10-12 Tue>
 #
 9.  How do you split the window in half vertically, so that the halves are side by side?
-
+The command C+x 3 will split the window in half vertically.
 10.  How long can you repeat the operations in questions 8 and 9?
 You can repeat the operations from 8 or 9 four times from the starting
 section, but I was able to get 8 total vertical "halves" by splitting the
 other "halves". You can continue until a pane is too small to be split anymore.
 11.  What is a buffer?
-    
+Buffers are objects with distinct names that hold text that can be editted.
 12.  How do you get a list of all the buffers running in your emacs
      process?
-
+To get a list of all the buffers running, one can use the command sequence
+C+x C+b.
 13.  How do you jump to the top of the file without scrolling?
 The command M+< allows you to jump to the top of the file without scrolling.
 14.  How do you jump to the bottom of the file without scrolling?
-
+The command M+> lets you jump to the bottom of the file without scrolling.
 15.  How do you move down a page without scrolling?
-
+The command C+v moves down a page without scrolling.
 16.  How do you move up a page without scrolling?
 To move up a page without scrolling, use the command M+v
-17.  How do you move to the end of a line?f
-
+17.  How do you move to the end of a line?
+The command C+e moves you to the beginning of the line.
 18.  How do you move to the beginning of a line?
-
+The command C+a moves you to the end of a line.
 19.  What is the point?
 The point is the current location of the cursor.
 20.  What is the mark?
