@@ -475,7 +475,8 @@ print(count)
 # pref-regex
 34.  Now use the Porter stemmer on the set from problem [[sort-set]] (again, show
     your code and results).  What do you notice?
-
+This problem relies on a problem my team members were responsible for, and
+they did not complete nor ask for help until right before the homework deadline.
 
 
 ** 8 Tags, Tagsets, and Tagging
@@ -542,7 +543,8 @@ silly = ['FOO','BAR','EGO','NEED','ADS','DUCK','MANSE'
 tagged sentence
 rule i:   context:  X -> Y
 #+END_EXAMPLE
-
+This problem relies on a problem my team members were responsible for, and
+they did not complete nor ask for help until right before the homework deadline.
 # <<to-gram>>
 41. [@41]  <<to-gram>> Example 2.2 in [[http://www.nltk.org/book/ch07.html][chapter 7]] shows a little grammar for noun phrase
     chunking.  Let's mix it up a bit and define a grammar for "to phrases":
