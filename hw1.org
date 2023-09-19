@@ -312,7 +312,7 @@ prefixes = ['anti','auto','de','dis','down','extra','hyper','il','im','in','ir',
 |------------+--------------------------------------+---------------|
 | Eric       | green \color{green}\rule{5mm}{3mm}   | willarderic   |
 | Mrigdala   | yellow \color{yellow}\rule{5mm}{3mm} | Mrigdala22    |
-|            | purple \color{violet}\rule{5mm}{3mm} |               |
+| Levi       | purple \color{violet}\rule{5mm}{3mm} |               |
 
 For each person in your team, please list in order of decreasing preference
 your top three choices for corpora.  Be careful to choose a corpus, not a
@@ -324,7 +324,7 @@ resolve any conflicts!
 
 | first name | first choice | second choice | third choice |
 |------------+--------------+---------------+--------------|
-| Eric       |              |               |              |
+| Eric       | brown        | gutenberg     |              |
 | Mrigdala   |              |               |              |
 | Levi       |              |               |              |
 
@@ -484,20 +484,46 @@ print(count)
     (and show the result).
 
 #  <<ran-sent>> 
+
+#+begin_src python :results output
+  from nltk.corpus import brown
+  import random
+  sents = brown.sents()
+  num_sents = len(brown.sents())
+  random_sentence_index = random.randint(0, num_sents)
+  print(random_sentence_index)
+#+end_src
+
+#+results:
+: 19701
+
 36. <<ran-sent>> Import the corpus and count the number of sentences in it, discarding
     any uninteresting front matter such as titles and chapter headings.
     Then show a random sentence.
 
 37.  Tag each token in your random sentence as 'VB'.
 
-# <<silly-tags>>
-38. <<silly-tags>> Of course that's pretty silly, but we can make it even sillier.  Build
-    a dictionary of the incorrectly tagged words in your sentence using the
-    following tags: 
-#+begin_src python
-silly = ['FOO','BAR','EGO','NEED','ADS','DUCK','MANSE']
+#+begin_src python :results output
+
+from nltk.corpus import brown
+from nltk.tag import DefaultTagger
+random_sentence_index = 19701
+sents = brown.sents()
+default_tagger = DefaultTagger('VB')
+tagged_sentence = default_tagger.tag(sents[random_sentence_index])
+print(tagged_sentence)
 #+end_src
 
+#+results:
+: [('With', 'VB'), ('few', 'VB'), ('exceptions', 'VB'), (',', 'VB'), ('the', 'VB'), ('major', 'VB'), ('denominations', 'VB'), ('are', 'VB'), ('rapidly', 'VB'), ('losing', 'VB'), ('their', 'VB'), ('hold', 'VB'), ('on', 'VB'), ('the', 'VB'), ('central', 'VB'), ('city', 'VB'), ('.', 'VB')]
+
+    # <<silly-tags>>
+38. <<silly-tags>> Of course that's pretty silly, but we can make it even sillier.  Build
+	a dictionary of the incorrectly tagged words in your sentence using the
+	following tags:
+#+begin_src python
+silly = ['FOO','BAR','EGO','NEED','ADS','DUCK','MANSE'
+#+end_src
 #  [[ran-sent]]
 
 39. [@39]  <<bo-tagger>> Construct a lookup tagger trained on the 1000 most frequent words in
