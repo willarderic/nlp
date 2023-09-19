@@ -312,7 +312,7 @@ prefixes = ['anti','auto','de','dis','down','extra','hyper','il','im','in','ir',
 |------------+--------------------------------------+---------------|
 | Eric       | green \color{green}\rule{5mm}{3mm}   | willarderic   |
 | Mrigdala   | yellow \color{yellow}\rule{5mm}{3mm} | Mrigdala22    |
-| Levi       | purple \color{violet}\rule{5mm}{3mm} |               |
+| Levi       | purple \color{violet}\rule{5mm}{3mm} | Winston104    |
 
 For each person in your team, please list in order of decreasing preference
 your top three choices for corpora.  Be careful to choose a corpus, not a
@@ -324,7 +324,7 @@ resolve any conflicts!
 
 | first name | first choice | second choice | third choice |
 |------------+--------------+---------------+--------------|
-| Eric       | brown        | gutenberg     |              |
+| Eric       | brown        | gutenberg     | abc          |
 | Mrigdala   |              |               |              |
 | Levi       |              |               |              |
 
