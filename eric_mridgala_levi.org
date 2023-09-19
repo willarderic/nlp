@@ -1,0 +1,968 @@
+
+# this is ../me/mimi/chores/teaching/current/nlp/class_notes/homework/hw1.org
+
+
+#+title: Homework 1:  Getting Started and the Structural Units of Language
+#+author: Toni Kazic
+#+date: Fall, 2023
+
+# revised text of qs 31--34 <2021-08-25 Wed>
+#
+# revised text of qs 38 (bo-tagger) and 39 <2021-09-14 Tue>
+
+
+#+SETUPFILE: "../../../common/preamble.org"
+#+LATEX_CLASS: article
+#+OPTIONS: toc:nil
+#+OPTIONS: ^:nil
+
+#+LATEX_HEADER: \usepackage{langsci-avm}
+# http://ftp.math.purdue.edu/mirrors/ctan.org/macros/latex/contrib/langsci-avm/langsci-avm.pdf
+
+#+LATEX_HEADER: \newcommand{\grmr}[2]{\ensuremath{\mathrm{#1} & \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\txtgrmr}[2]{\ensuremath{\mathrm{#1} \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\grmrhs}[1]{\ensuremath{& \,\longrightarrow\, \mathrm{#1} }}
+#+LATEX_HEADER: \newcommand{\wa}[1]{\type{\textnormal{\w{#1}}}}
+
+# compile with pdflatex
+#
+# Kazic, 3.11.2020
+
+
+# fixed question numbering on latex export, at the cost of removing line
+# feeds and a little hard-wiring.
+#
+# It's possible to set the org-empty-line-terminates-plain-lists
+#
+# Kazic, 31.8.2021
+#
+# finally, cross-linking on list items!
+# https://stackoverflow.com/questions/28151373/orgmode-referring-to-an-item-in-a-numbered-list
+#
+# Kazic, 1.9.2021
+
+
+* Introduction
+
+This homework lays the foundation for the course to help you work smoothly
+through the semester.  It starts our work on several course objectives and
+introduces the basic structural units of languages.  We'll explore some
+linguistic and computational approaches to these units.
+
+
+
+* Who's Who and Solution Patterns
+<<whoswho>>
+
+
+
+** Group Members
+
+| first name last name | color                                |
+|----------------------+--------------------------------------|
+| Eric Willard         | green \color{green}\rule{5mm}{3mm}   |
+| Mridgala Biereddy    | yellow \color{yellow}\rule{5mm}{3mm} |
+| Levi Cheney          | purple \color{violet}\rule{5mm}{3mm} |
+
+
+
+
+** Two Member Solution Patterns
+
+| color                         | draft solution | revise solution |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | odds           | evens           |
+| yellow \color{yellow}\rule{5mm}{3mm} | evens          | odds            |
+
+
+** Three Member Solution Patterns
+
+$i$ is the question number.
+
+#+begin_center
+#+ATTR_LaTeX: :mode inline-math :environment array
+| \text{color}                  | \text{draft solution} | \text{revise solution} |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | i \mod 3 = 1   | i \mod 3 = 0    |
+| yellow \color{yellow}\rule{5mm}{3mm} | i \mod 3 = 2   | i \mod 3 = 1    |
+| purple \color{violet}\rule{5mm}{3mm} | i \mod 3 = 0   | i \mod 3 = 2    |
+#+end_center
+
+
+* General Instructions
+
+   + /Fill out the group members table and follow the solution patterns/ in
+     Section [[whoswho]].
+
+   + /If the question is unclear, tell me your interpretation of it as part
+     of your answer./  Feel free to ask about the questions in class or on
+     the Slack channel (use =@channel= as others will probably be puzzled
+     too). 
+
+   + /For questions using corpora, use the corpus of the lead person./
+
+   + /Put your draft answers right after each question using a *complete,
+     functional* =org= mode code or example block./ Make sure your code
+     block is complete and functional by testing it in your copy of this
+     homework file.
+
+   + /Each group member reviews the others' draft solutions and you revise them together/.
+
+   + /Discuss each other's draft and reviews, finalizing the answers./
+
+   + /Show all your work: code, results, and analysis./  Does your code
+     work in this file and produce *exactly* the results you show? 
+
+   + /Post the completed file to Canvas no later than noon on the Tuesday
+     indicated/ in the [[../syllabus.org::schedule][schedule in the syllabus]], naming your file with each
+     person's first name (no spaces in the file name, and don't forget the
+     =.org= extension!).  Only one person should submit the final file.
+
+
+   
+* Hints
+
+** Follow the instructions in [[file:../notes.org::tech][the technical setup section of the notes]].
+Briefly: install [[https://www.gnu.org/software/emacs/download.html][emacs]] for your operating systems; take its tutorial;
+install [[file:../../../common/mechanics/pythonesque.org][python and nltk (including the data)]]; practice the examples in
+[[file:../mechanics/python_org_mode.org][python_org_mode.org]]; and explore the [[http://www.nltk.org/nltk_data/][various corpora available]].
+
+
+** *Don't use :session in your code block header!* 
+It makes the code blocks interdependent, and I don't want to make a mistake
+when cutting and pasting your code to test it.  I should be able to
+reproduce your results exactly by running your code block in =org=, so
+if it doesn't run you're headed for toast.
+
+
+** Don't overthink this!
+
+The point of using =NLTK= is to learn it, not re-invent it unless there is a
+very good reason.  If you mistrust an answer it gives you, then coding from
+scratch and /comparing the results as part of your answer/ is good.
+
+
+This also applies to =scikit-learn=!
+
+
+
+
+** Make sure you get the right version of the book and documentation when googling.
+
+There are many examples drawn from the first edition of the book and NLTK
+2.0 out on the web.  Syntax and functionality have changed between NLTK 2.0
+and 3.0:  here's [[https://streamhacker.com/2014/12/02/nltk-3/][a short rundown on these]].
+
+
+
+** Some Variations on Loading Python Modules
+
++ If you just say "import nltk", python doesn't enter the names of any of
+  the functions contained within the nltk module into the current symbol
+  table.  So when you want to call a function, you have to use the dot
+  notation:
+#+BEGIN_EXAMPLE
+nltk.FCN_NAME()
+#+END_EXAMPLE
+
+
+
+
+
+
++ You can import specific functions into the current symbol table:
+#+BEGIN_EXAMPLE
+from nltk import FCN
+#+END_EXAMPLE
+
+
+And when you do this, they can be called directly:
+#+BEGIN_EXAMPLE
+FCN()
+#+END_EXAMPLE
+
+
+
+
++ Or, you can import all of the functions at once:
+#+BEGIN_EXAMPLE
+from nltk import *
+#+END_EXAMPLE
+
+
+and then call them directly:
+#+BEGIN_EXAMPLE
+FCN()
+#+END_EXAMPLE
+
+
+Importing all the functions in a package or module is generally frowned
+upon by the Pythonistas as one wouldn't necessarily know all the names of the 
+functions in a module, and they don't want python to confuse the symbols.  While
+you can see the current symbol table by typing 
+#+BEGIN_EXAMPLE
+dir()
+#
+# or, that for a particular package,
+#
+dir(nltk)
+#+END_EXAMPLE
+you might want to play it safe.
+
+
+
++ Finally, you might want to abbreviate a function's (or submodule's) name when you import it:
+#+BEGIN_EXAMPLE
+import matplotlib.pyplot as plt
+. . .
+plt.savefig()
+#+END_EXAMPLE
+
+
+
+** What Can I Do with This Data Structure?
+
+Python implements many data structures, like integers (int), lists ([]),
+tuples (()), sets ({}), and dictionaries (aka associative arrays or
+key-value lists).  To quickly see what built-in functions are available
+for a data structure and get a little help on them:
+
+#+begin_src python
+#
+# define an empty list
+#
+L = []
+dir(L)
+
+t = ()00
+dir(t)
+
+help(t.count)
+
+# type q to get back to the python prompt
+
+#+end_src
+
+
+
+
+
+
+
+
+** If you don't see any output with #+begin_src python :results output, try a print()
+
+
+
+
+** defaultdict is an essentially empty data structure!
+
+For example, it's *not* a dictionary of words and tags.
+
+
+
+** Get the right input for the frequency distributions.
+
+In a conditional frequency distribution built from a tagged corpus, the
+keys are the tokens and the values are the tags.  NLTK calls the keys
+/conditions/: for example, the condition for the value = 'AT' is that the
+key = 'the'.  That's very different from the unconditioned frequency
+distribution.
+
+
+
+
+** Useful Web Sites
+
+You may find the [[https://docs.python.org/3/tutorial/index.html][official python tutorial]] useful, especially the earlier sections (I did).
+
+[[https://docs.python.org/3/faq/index.html][A collection of Python FAQs]].
+
+[[http://www.nltk.org/py-modindex.html][Index to the current versions of NLTK modules and functions.]]  The examples
+in the book may not always be current with the state of the code.
+
+
+[[https://en.wikipedia.org/wiki/English_prefix][Wikipedia has a fairly thorough list]] of prefixes, but let's use the list of the most
+common prefixes found at [[http://dictionary.cambridge.org/us/grammar/british-grammar/prefixes][the Cambridge English Grammar]] site:
+
+#+begin_src python :results output
+prefixes = ['anti','auto','de','dis','down','extra','hyper','il','im','in','ir','inter',
+             'mega','mid','mis','non','over','out','post','pre','pro','re','semi','sub',
+             'super','tele','trans','ultra','un','under','up']
+#+end_src
+
+
+
+
+
+
+
+* Questions 
+
+# revised <2021-10-14 Thu> to eliminate freebie
+
+
+
+** What are Your GitHub Handles and Corpus Preferences?  Fill Out Here and DM me the answers.
+
+1. [@1] If you don't already have one, get a [[https://github.com/][GitHub handle]] and DM this table to
+   me on Slack.
+
+| first name | color                                | GitHub handle |
+|------------+--------------------------------------+---------------|
+| Eric       | green \color{green}\rule{5mm}{3mm}   | willarderic   |
+| Mrigdala   | yellow \color{yellow}\rule{5mm}{3mm} | Mrigdala22    |
+| Levi       | purple \color{violet}\rule{5mm}{3mm} | Winston104    |
+
+For each person in your team, please list in order of decreasing preference
+your top three choices for corpora.  Be careful to choose a corpus, not a
+model, lexicon, or other lexical aid.  Suggestion: load interesting corpora
+and get a few sentences from each.
+
+Please DM me the filled out table on Slack by our third class so I can
+resolve any conflicts!
+
+| first name | first choice | second choice | third choice |
+|------------+--------------+---------------+--------------|
+| Eric       | brown        | gutenberg     | abc          |
+| Mrigdala   | brown        | gutenberg     | state_union  |
+| Levi       | web text     | twitter       | word lists   |
+
+
+
+
+
+
+
+** 21 emacs questions
+
+# see
+# https://stackoverflow.com/questions/28351465/emacs-orgmode-do-not-insert-line-between-headers
+
+Answer the emacs questions giving the KEYSTROKES, following the emacs
+conventions for the control and meta keys.  Some questions require answers
+in English: stick those in an example block too.
+
+
+2. [@2] How do you start emacs from the command line?
+Type 'emacs' in the command line to start an emacs process.
+3. How do you open a file?
+The command sequence C+x C+f lets you input the path to a file to open.
+4. How do you edit it?
+Put the cursor where you want to make a change and insert and/or delete
+characters from there.
+5. How do you save it?
+The command sequence C+x C+s saves a file.
+6. How do you get help without googling?
+
+7. How do you get out of trouble?
+C+g is a command to cancel your current command, which would get you out of trouble.
+# second clause added <2021-10-12 Tue>
+#
+8.  How do you split the window in half horizontally, so that one half is above the other?
+The command C+x 2 will split the window in half horizontally.
+# second clause added <2021-10-12 Tue>
+#
+9.  How do you split the window in half vertically, so that the halves are side by side?
+The command C+x 3 will split the window in half vertically.
+10.  How long can you repeat the operations in questions 8 and 9?
+You can repeat the operations from 8 or 9 four times from the starting
+section, but I was able to get 8 total vertical "halves" by splitting the
+other "halves". You can continue until a pane is too small to be split anymore.
+11.  What is a buffer?
+Buffers are objects with distinct names that hold text that can be editted.
+12.  How do you get a list of all the buffers running in your emacs
+     process?
+To get a list of all the buffers running, one can use the command sequence
+C+x C+b.
+13.  How do you jump to the top of the file without scrolling?
+The command M+< allows you to jump to the top of the file without scrolling.
+14.  How do you jump to the bottom of the file without scrolling?
+The command M+> lets you jump to the bottom of the file without scrolling.
+15.  How do you move down a page without scrolling?
+The command C+v moves down a page without scrolling.
+16.  How do you move up a page without scrolling?
+To move up a page without scrolling, use the command M+v
+17.  How do you move to the end of a line?
+The command C+e moves you to the beginning of the line.
+18.  How do you move to the beginning of a line?
+The command C+a moves you to the end of a line.
+19.  What is the point?
+The point is the current location of the cursor.
+20.  What is the mark?
+    Marks are used to remember position in a file or buffer so we can return to it later very easily. Mark is used in combination with point.
+
+# revised to specify mark and point, <2022-10-12 Wed>    
+21.  Why are the mark and point useful?
+    The point is essentially the cursor or the current position of your editing point in the buffer. The mark is a way to highlight or remember a specific location in the buffer, different from the point.Text selection, Copying and cutting, Deleting and Replacing Text, navigation is done.
+    
+
+22.  How do you exit emacs?
+The sequence of commands to exit is C+x C+c
+Answer the remaining questions with a corpus of your choice  from the NLTK book.
+
+
+** 6 python/nltk questions
+
+
+23.  [@23] What is the command to insert a python code block template?
+     #+begin_example
+    C-c C-, s in emacs
+
+    #+begin_src python :results <output> 
+    #+end_src
+    
+    #+end_example
+    
+
+24.  Load nltk and import the corpus using a python code block.
+#+begin_src python :results output                                                      
+import nltk
+nltk.download("gutenberg")
+from nltk.corpus import gutenberg
+corpus_words = gutenberg.words()
+total_words = len(corpus_words)
+print("Total words in the gutenberg Corpus:", total_words)                                                 
+#+end_src
+
+#+RESULTS:
+: Total words in the gutenberg Corpus: 2621613
+                                                      
+25.  How many unique tokens are in your corpus?
+#+begin_src python :results output
+from nltk.corpus import brown
+print(len(set(brown.words())))
+#+end_src
+
+#+results:
+: 56057
+
+26.  Print out the first 1000 tokens in your corpus.
+#+begin_src python :results output
+import nltk
+from nltk.tokenize import word_tokenize
+nltk.download('gutenberg')
+from nltk.corpus import gutenberg
+corpus_text = gutenberg.raw()[:1000]
+corpus_tokens = word_tokenize(corpus_text)
+formatted_output = '[' + ', '.join(["'" + token + "'" for token in corpus_tokens]) + ']'
+print(formatted_output)
+#+end_src
+
+#+RESULTS:
+: ['[', 'Emma', 'by', 'Jane', 'Austen', '1816', ']', 'VOLUME', 'I', 'CHAPTER', 'I', 'Emma', 'Woodhouse', ',', 'handsome', ',', 'clever', ',', 'and', 'rich', ',', 'with', 'a', 'comfortable', 'home', 'and', 'happy', 'disposition', ',', 'seemed', 'to', 'unite', 'some', 'of', 'the', 'best', 'blessings', 'of', 'existence', ';', 'and', 'had', 'lived', 'nearly', 'twenty-one', 'years', 'in', 'the', 'world', 'with', 'very', 'little', 'to', 'distress', 'or', 'vex', 'her', '.', 'She', 'was', 'the', 'youngest', 'of', 'the', 'two', 'daughters', 'of', 'a', 'most', 'affectionate', ',', 'indulgent', 'father', ';', 'and', 'had', ',', 'in', 'consequence', 'of', 'her', 'sister', ''s', 'marriage', ',', 'been', 'mistress', 'of', 'his', 'house', 'from', 'a', 'very', 'early', 'period', '.', 'Her', 'mother', 'had', 'died', 'too', 'long', 'ago', 'for', 'her', 'to', 'have', 'more', 'than', 'an', 'indistinct', 'remembrance', 'of', 'her', 'caresses', ';', 'and', 'her', 'place', 'had', 'been', 'supplied', 'by', 'an', 'excellent', 'woman', 'as', 'governess', ',', 'who', 'had', 'fallen', 'little', 'short', 'of', 'a', 'mother', 'in', 'affection', '.', 'Sixteen', 'years', 'had', 'Miss', 'Taylor', 'been', 'in', 'Mr.', 'Woodhouse', ''s', 'family', ',', 'less', 'as', 'a', 'governess', 'than', 'a', 'friend', ',', 'very', 'fond', 'of', 'both', 'daughters', ',', 'but', 'particularly', 'of', 'Emma', '.', 'Between', '_them_', 'it', 'was', 'more', 'the', 'intimacy', 'of', 'sisters', '.', 'Even', 'before', 'Miss', 'Taylor', 'had', 'ceased', 'to', 'hold', 'the', 'nominal', 'office', 'of', 'governess', ',', 'the', 'mildness', 'o']
+
+27.  Why do the tokens include punctuation?
+    There are several reasons grammatical structure, tokenization consistency, text analysis and semantic info.
+    
+
+28.  How many unique tokens are in the first 1000?
+#+begin_src python :results output
+from nltk.corpus import brown
+print(len(set(brown.words()[:1000])))
+#+end_src
+
+#+results:
+: 438
+
+
+
+
+
+
+** 6 morpheme/morphosyntax/N-gram questions
+
+
+29.  [@29] How many of each of the principal modal verbs occur in your corpus?
+#+begin_src python :results output
+import nltk
+from nltk.corpus import gutenberg
+from nltk import FreqDist
+from nltk.tokenize import word_tokenize
+nltk.download('punkt')
+words = gutenberg.words()
+modal_verbs = ["can", "could", "may", "might", "must", "shall", "should", "will", "would"]
+words = word_tokenize(" ".join(words))
+fdist = FreqDist(words)
+modal_verb_counts = {verb: fdist[verb] for verb in modal_verbs}
+for verb, count in modal_verb_counts.items():
+    print(f"{verb}: {count}")
+#+end_src
+
+#+RESULTS:
+: can: 2962
+: could: 3528
+: may: 2435
+: might: 1938
+: must: 2274
+: shall: 11456
+: should: 2496
+: will: 7130
+: would: 3932
+
+30.  How many unique bigrams are in your text?
+#+begin_src python :results output
+import nltk
+from nltk import bigrams
+from nltk.corpus import gutenberg
+nltk.download('gutenberg')
+words = gutenberg.words()
+bi_grams = list(bigrams(words))
+unique_bigrams = set(bi_grams)
+num_unique_bigrams = len(unique_bigrams)
+print("Number of unique bigrams:", num_unique_bigrams)
+#+end_src
+
+#+RESULTS:
+: Number of unique bigrams: 576283
+
+# stopword caution
+31.  How many bigrams contain the modal \w{can}?  Compute both for all and the
+    unique bigrams.  Don't exclude stopwords!
+#+begin_src python :results output
+from nltk.corpus import brown
+from nltk.util import bigrams
+bigrams = list(bigrams(brown.words()))
+count = 0
+for bigram in bigrams:
+  if bigram[0] == 'can' or bigram[1] == 'can':
+    count = count + 1
+print(count)
+#+end_src
+
+#+results:
+: 3476
+
+# revised to insist on a prefix
+# <<pref-regex>>
+32.  <<pref-regex>> Choose a prefix from the list above and write a regular expression
+    that identifies *all* words in your corpus containing that prefix
+    (remember that a prefix begins the word).  What's the length of that
+    group of words?
+#+begin_src python :results output
+import random
+from nltk import word_tokenize
+from nltk.corpus import gutenberg
+prefixes = [
+    'anti', 'auto', 'de', 'dis', 'down', 'extra', 'hyper', 'il', 'im', 'in', 'ir', 'inter',
+    'mega', 'mid', 'mis', 'non', 'over', 'out', 'post', 'pre', 'pro', 're', 'semi', 'sub',
+    'super', 'tele', 'trans', 'ultra', 'un', 'under', 'up'
+]
+dataset = gutenberg
+tokens = word_tokenize(dataset.raw())
+prefix = random.choice(prefixes)
+words_with_prefix = [word for word in tokens if word.startswith(prefix)]
+print('[{}] words containing the prefix {}: '.format(len(words_with_prefix), prefix))
+print(words_with_prefix)
+#+end_src   
+
+#+RESULTS:
+: [342] words containing the prefix super: 
+: ['superiority', 'superior', 'superior', 'superior', 'superior', 'superior', 'superadded', 'superior', 'superior', 'superior', 'superiority', 'superior', 'superiority', 'superior', 'superior', 'superseded', 'superintend', 'superior', 'superior', 'superior', 'superiority', 'superior', 'superior', 'superior', 'superiority', 'superiority', 'superior', 'superior', 'superior', 'superior', 'superior', 'superseded', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superiority', 'superior', 'superior', 'superior.', 'superior', 'superior', 'superior', 'superior', 'superiority', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior', 'superior.', 'superior', 'superiority', 'superior', 'superior', 'superior', 'superiority', 'superior', 'superiority', 'superior', 'superiority', 'superior', 'superiority', 'superior', 'superior', 'superfine', 'superior', 'superiority', 'superiority', 'superficial', 'superiority', 'superiors', 'superiority', 'superior', 'superior', 'superior', 'superiorities', 'superiority', 'superiority', 'superiority', 'superannuated', 'superior', 'superior', 'superior', 'superior', 'superiority', 'superior', 'superiority', 'superior', 'superior', 'superior', 'superior', 'superior', 'superintend', 'superior', 'superior', 'superfluous', 'superfluous', 'superscription', 'superscription', 'superscription', 'superscription', 'superscription', 'superstitious', 'superstition', 'superfluous', 'superfluity', 'superiority', 'superficially', 'supernatural', 'superiority', 'superstition', 'superb', 'superstition', 'superhuman', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'supernatural', 'superstitious', 'superstitious', 'superior', 'superstition', 'superstitious', 'superstition', 'superb', 'superior', 'supernatural', 'supercilious', 'supernatural', 'superior', 'superior', 'superstition', 'supernaturalism', 'superstition', 'superior', 'superstitions', 'superstitious', 'superstitious', 'superficially', 'superfluous', 'superscription', 'superstitious', 'superficial', 'supernatural', 'supernatural', 'superstitious', 'superstition', 'superstitions', 'superstition', 'superstition', 'superstition', 'superciliously', 'superficial', 'superficial', 'super-man', 'supernatural', 'superiority', 'supernatural', 'supernatural', 'superstitious', 'superior', 'superior', 'superior', 'superb', 'superiority', 'superior', 'superficial', 'superseded', 'superior', 'superior', 'superabundant', 'superior', 'superior', 'superstition', 'superior', 'superior', 'superior', 'superior', 'superiority', 'superlatives', 'superstitiously', 'superstitious', 'supernaturally', 'supernatural', 'supernatural', 'superinduced', 'superior', 'superior', 'superfluous', 'superior', 'superfluous', 'superfluousness', 'superstition', 'superstition', 'superstitiousness', 'superstitions', 'superstitiously', 'supervision', 'superior', 'superior', 'superiority', 'superiority', 'superstitions', 'superadd', 'superb', 'superior', 'superior', 'superstitiousness', 'supernatural', 'superstitious', 'superstitious', 'superstitiously', 'superstitious', 'superstitions', 'supernatural', 'superlatively', 'supernatural', 'supernatural', 'supernaturalism', 'superstitions', 'superstitious', 'superstitious', 'superiority', 'superlative', 'superstitious', 'superstitious', 'superlatively', 'superstition', 'superiority', 'superiority', 'superior', 'superior', 'superficial', 'superstitions', 'superseded', 'superhuman', 'superior', 'superiority', 'superlative', 'superincumbent', 'superb', 'superfluous', 'superficially', 'superior', 'superb', 'superstition', 'superior', 'superficial', 'superior', 'superiors', 'supernatural', 'supernaturalness', 'supernal', 'superstitious', 'superior', 'superstitious', 'superstitious', 'supernal', 'superior', 'superstition', 'superiour', 'superiour', 'superfluous', 'superfluous', 'superiour', 'superiour', 'superiour', 'superficially', 'supernal', 'superfluous', 'superfluous', 'supernumerary', 'supernal', 'superiour', 'superstitions', 'superfluous', 'superuize', 'supernaturall', 'superb', 'superior', 'supernatural', 'superbly', 'superior', 'superb', 'superb', 'superb', 'superior', 'superbly', 'superior', 'superb', 'superber', 'superber', 'superb', 'superior', 'superb', 'superb', 'superb', 'supercilious', 'superb', 'superiors', 'superior', 'superb', 'superb', 'superior', 'superbest', 'superbest', 'superior', 'superber', 'superb', 'superb', 'superb', 'superbest', 'superb', 'superb', 'superb', 'superfluous', 'superb']
+
+# revised to specify what to show
+# pref-regex
+33.  <<sort-set>> Sort the set of problem [[pref-regex]] in alphabetical order (show your code and
+    results) and study it.  Do you see multiple forms of the same headword?
+    Show some examples.
+#+begin_src python :results output
+import random
+from nltk import word_tokenize
+from nltk.corpus import gutenberg
+import re
+prefixes = [
+    'anti', 'auto', 'de', 'dis', 'down', 'extra', 'hyper', 'il', 'im', 'in', 'ir', 'inter',
+    'mega', 'mid', 'mis', 'non', 'over', 'out', 'post', 'pre', 'pro', 're', 'semi', 'sub',
+    'super', 'tele', 'trans', 'ultra', 'un', 'under', 'up'
+]
+dataset = gutenberg.raw()
+prefix = random.choice(prefixes)
+pattern = r'\b' + re.escape(prefix) + r'\w+\b'
+words_with_prefix = re.findall(pattern, dataset)
+unique_sorted_words_with_prefix = sorted(set(words_with_prefix))
+print('[{}] words containing the prefix \'{}\': '.format(len(words_with_prefix), prefix))
+print('\nUnique sorted words with prefix \'{}\': \n{}'.format(prefix, unique_sorted_words_with_prefix))
+#+end_src
+
+#+RESULTS:
+: [13925] words containing the prefix 'in': 
+: 
+: Unique sorted words with prefix 'in': 
+: ['inability', 'inabstinence', 'inaccessible', 'inaccurate', 'inaction', 'inactive', 'inadequate', 'inadequately', 'inadmissibility', 'inadvertence', 'inadvertencies', 'inalienable', 'inanimate', 'inappropriate', 'inarm', 'inarticulate', 'inartistic', 'inasmuch', 'inattention', 'inattentive', 'inaudible', 'inaudibly', 'inaugurate', 'inboard', 'inbound', 'inbred', 'incalculable', 'incandescent', 'incantation', 'incapable', 'incapacitated', 'incarcerated', 'incarnardine', 'incarnate', 'incarnated', 'incarnating', 'incarnation', 'incarnations', 'incased', 'incautiously', 'incautiousness', 'incens', 'incense', 'incensed', 'incentive', 'inception', 'incertaine', 'incessant', 'incessantly', 'incestuous', 'inch', 'inches', 'incident', 'incidental', 'incidentally', 'incidents', 'incisions', 'incited', 'incitement', 'incites', 'incivility', 'inclement', 'inclin', 'inclination', 'inclinations', 'inclinde', 'incline', 'inclined', 'inclines', 'inclineth', 'inclining', 'inclos', 'inclose', 'inclosed', 'inclosing', 'inclosings', 'include', 'included', 'includes', 'including', 'inclusive', 'incognita', 'incognito', 'incoherence', 'incoherences', 'incoherent', 'incoherently', 'income', 'incoming', 'incommode', 'incommoded', 'incommoding', 'incommodiously', 'incommunicable', 'incomparable', 'incompast', 'incompatible', 'incompetence', 'incompetency', 'incompetent', 'incomplete', 'incomposed', 'incomprehensible', 'incomputable', 'inconceivable', 'inconclusive', 'incongruity', 'incongruous', 'inconsequent', 'inconsequently', 'inconsiderable', 'inconsiderate', 'inconsiderately', 'inconsideration', 'inconsistencies', 'inconsistency', 'inconsistent', 'inconsolable', 'inconstancy', 'inconstant', 'incontestable', 'incontinency', 'incontinent', 'incontinently', 'inconvenience', 'inconveniences', 'inconvenient', 'inconveniently', 'incorporate', 'incorporated', 'incorporeal', 'incorrect', 'incorrigible', 'incorrupt', 'incorruptible', 'incorruption', 'increase', 'increased', 'increases', 'increasest', 'increaseth', 'increasing', 'increasingly', 'increate', 'incredible', 'incredibly', 'incredulity', 'incredulous', 'incredulously', 'incrustation', 'incrustations', 'incubus', 'inculcated', 'inculcating', 'incumbent', 'incumbrance', 'incumbrances', 'incur', 'incurable', 'incurably', 'incurious', 'incuriously', 'incurred', 'incurrest', 'incurring', 'ind', 'indeauour', 'indebted', 'indebtedness', 'indecency', 'indecent', 'indecipherable', 'indecision', 'indecisive', 'indecisively', 'indecorous', 'indeed', 'indeede', 'indefatigable', 'indefensible', 'indefinably', 'indefinite', 'indefinitely', 'indefiniteness', 'indelible', 'indelicacy', 'indelicate', 'indemnify', 'indented', 'indenture', 'independence', 'independent', 'independently', 'indescribable', 'indescribably', 'indestructible', 'index', 'indexes', 'india', 'indicate', 'indicated', 'indicates', 'indicating', 'indication', 'indications', 'indicative', 'indifference', 'indifferent', 'indifferently', 'indigence', 'indigenous', 'indigestion', 'indignant', 'indignantly', 'indignation', 'indignations', 'indignity', 'indirect', 'indirection', 'indirections', 'indirectly', 'indiscreet', 'indiscreetly', 'indiscretion', 'indiscretions', 'indiscriminately', 'indispensable', 'indispensableness', 'indispensably', 'indisposed', 'indisposition', 'indisputable', 'indisputably', 'indissoluble', 'indistinct', 'indistinctly', 'indistinctness', 'indite', 'inditing', 'indiuidible', 'individual', 'individualist', 'individualities', 'individuality', 'individualizing', 'individually', 'individuals', 'indivisible', 'indolence', 'indolent', 'indolently', 'indomitable', 'indomitableness', 'indoor', 'indoors', 'indorsement', 'indubitable', 'indubitably', 'induce', 'induced', 'inducement', 'inducements', 'induces', 'inducing', 'indued', 'indulge', 'indulged', 'indulgence', 'indulgent', 'indulges', 'indulging', 'indure', 'industrial', 'industrious', 'industriously', 'industry', 'inebriate', 'inebriety', 'ineffable', 'ineffably', 'ineffaceable', 'ineffectual', 'ineffectually', 'inefficient', 'inelegance', 'inelegant', 'ineligible', 'ineloquent', 'inequality', 'ineradicable', 'inert', 'inertia', 'inestimable', 'inevitable', 'inevitably', 'inexcusable', 'inexhaustible', 'inexorable', 'inexpensive', 'inexperience', 'inexperienced', 'inexpert', 'inexplicable', 'inexpressible', 'inexpressibly', 'inexpressive', 'inextinguishable', 'inextricable', 'infaith', 'infallible', 'infallibly', 'infamed', 'infamous', 'infamously', 'infamy', 'infancy', 'infant', 'infantile', 'infantileness', 'infantry', 'infants', 'infatuated', 'infatuation', 'infect', 'infected', 'infecting', 'infection', 'infectious', 'infer', 'inference', 'inferences', 'inferentially', 'inferior', 'inferiorities', 'inferiority', 'inferiors', 'inferiour', 'infernal', 'infernally', 'inferred', 'infers', 'infested', 'infesting', 'infidel', 'infidelities', 'infidelity', 'infidels', 'infiltrated', 'infinite', 'infinitely', 'infinitude', 'infinity', 'infirm', 'infirmer', 'infirmitie', 'infirmities', 'infirmity', 'infixed', 'infixes', 'inflame', 'inflamed', 'inflames', 'inflaming', 'inflammation', 'inflate', 'inflated', 'inflates', 'inflating', 'inflexibility', 'inflexible', 'inflexibly', 'inflict', 'inflicted', 'inflicting', 'infliction', 'influence', 'influenced', 'influences', 'influential', 'influenza', 'influx', 'infold', 'infolded', 'infolding', 'infolds', 'inforce', 'inforced', 'inform', 'informant', 'information', 'informe', 'informed', 'informer', 'informers', 'informes', 'informidable', 'informing', 'informs', 'infranchisement', 'infringement', 'infringing', 'infuriate', 'infuriated', 'infus', 'infuse', 'infused', 'ing', 'ingag', 'ingale', 'ingannato', 'inganuar', 'ingathering', 'ingendering', 'ingenious', 'ingeniously', 'ingenuity', 'ingenuous', 'ingenuously', 'ingenuousness', 'ingiustamente', 'inglorious', 'ingloriously', 'ingorged', 'ingraft', 'ingrafted', 'ingrate', 'ingrateful', 'ingratiating', 'ingratitude', 'ingredients', 'ingulfed', 'inhabit', 'inhabitable', 'inhabitant', 'inhabitants', 'inhabited', 'inhabiters', 'inhabitest', 'inhabiteth', 'inhabiting', 'inhabitiveness', 'inhale', 'inhaled', 'inhaling', 'inherences', 'inherent', 'inheres', 'inherit', 'inheritance', 'inheritances', 'inherited', 'inheriteth', 'inheriting', 'inheritor', 'inherits', 'inhospitable', 'inhuman', 'inhumane', 'inhumanity', 'inimical', 'inimitable', 'inions', 'iniquities', 'iniquity', 'initials', 'initiate', 'initiated', 'initiates', 'injunction', 'injunctions', 'injure', 'injured', 'injuries', 'injuring', 'injurious', 'injury', 'injustice', 'ink', 'inkhorn', 'inkindled', 'inkling', 'inkstand', 'inky', 'inlaid', 'inland', 'inlander', 'inlarg', 'inlay', 'inlaying', 'inlayings', 'inlet', 'inlets', 'inloop', 'inly', 'inmate', 'inmates', 'inmost', 'inn', 'innate', 'inner', 'innermost', 'innkeeper', 'innkeepers', 'innocculate', 'innocence', 'innocency', 'innocent', 'innocently', 'innocents', 'innoxious', 'inns', 'innuendoes', 'innumerable', 'innumerably', 'inobled', 'inoffensive', 'inoffensiveness', 'inordinate', 'inquietude', 'inquietudes', 'inquire', 'inquired', 'inquirer', 'inquiries', 'inquiring', 'inquiringly', 'inquiry', 'inquisition', 'inquisitions', 'inquisitive', 'inquisitively', 'inquisitiveness', 'inroad', 'inroads', 'inroll', 'inrolled', 'insane', 'insanities', 'insanity', 'insatiable', 'insatiate', 'inscribed', 'inscription', 'inscriptions', 'inscrutable', 'inscrutably', 'insect', 'insects', 'insecurely', 'insensate', 'insensibility', 'insensible', 'insensibly', 'inseparable', 'inseparableness', 'inseparably', 'insert', 'inserted', 'inserting', 'insertion', 'inshore', 'inside', 'insider', 'insidious', 'insight', 'insignia', 'insignificance', 'insignificant', 'insincere', 'insincerity', 'insinuate', 'insinuated', 'insinuates', 'insinuating', 'insinuation', 'insinuations', 'insipid', 'insipidity', 'insist', 'insisted', 'insisting', 'insists', 'insolence', 'insolent', 'insolently', 'insoluble', 'insomuch', 'insouciance', 'inspect', 'inspecting', 'inspectingly', 'inspection', 'inspector', 'inspiration', 'inspire', 'inspired', 'inspires', 'inspiring', 'inspiriting', 'install', 'installed', 'instalment', 'instance', 'instances', 'instant', 'instantaneous', 'instantaneously', 'instantly', 'instants', 'instead', 'instep', 'instid', 'instigated', 'instigation', 'instigations', 'instigator', 'instilled', 'instinct', 'instinctive', 'instinctively', 'instincts', 'institute', 'instituted', 'institution', 'institutions', 'instruct', 'instructed', 'instructer', 'instructers', 'instructing', 'instruction', 'instructions', 'instructive', 'instructor', 'instructs', 'instrument', 'instrumental', 'instrumentall', 'instruments', 'insufferable', 'insufferably', 'insufficiency', 'insufficient', 'insufficiently', 'insular', 'insulated', 'insult', 'insulted', 'insulter', 'insultest', 'insulting', 'insults', 'insuperable', 'insupportable', 'insupportably', 'insuppressiue', 'insurance', 'insurances', 'insure', 'insured', 'insurgents', 'insurmountable', 'insurrection', 'intact', 'intangibility', 'intangible', 'integral', 'integrity', 'integument', 'intellect', 'intellects', 'intellectual', 'intellectualism', 'intellectually', 'intelligence', 'intelligent', 'intelligential', 'intelligently', 'intelligible', 'intemperance', 'intemperately', 'intend', 'intended', 'intendest', 'intending', 'intends', 'intense', 'intensely', 'intensest', 'intensified', 'intensifying', 'intensities', 'intensity', 'intent', 'intention', 'intentional', 'intentionally', 'intentioned', 'intentionless', 'intentions', 'intently', 'intentness', 'intents', 'inter', 'interblending', 'intercede', 'interceded', 'interceding', 'intercedings', 'intercept', 'intercepted', 'intercession', 'intercessions', 'intercessor', 'intercessour', 'interchange', 'interchangeably', 'interchanged', 'intercourse', 'interdicted', 'interdiction', 'interest', 'interested', 'interesting', 'interests', 'interfere', 'interfered', 'interference', 'interferes', 'interfering', 'interflow', 'interflowing', 'interfused', 'interfusing', 'interim', 'interior', 'interiors', 'interlaced', 'interlacing', 'interlacings', 'interlinked', 'interlinks', 'interlocked', 'interlocking', 'interlocks', 'interlude', 'interluding', 'intermeddle', 'intermeddleth', 'intermeddling', 'intermediate', 'interminable', 'interminably', 'intermission', 'intermit', 'intermits', 'intermitted', 'intermittent', 'intermitting', 'intermix', 'intermixed', 'intermixingly', 'intermixture', 'internal', 'internally', 'international', 'internationally', 'interpenetrate', 'interpolation', 'interpose', 'interposed', 'interposes', 'interposest', 'interposition', 'interpret', 'interpretation', 'interpretations', 'interprete', 'interpreted', 'interpreter', 'interpreters', 'interpreting', 'interre', 'interregnum', 'interrogating', 'interrogation', 'interrogatively', 'interrupt', 'interrupted', 'interrupting', 'interruption', 'interruptions', 'interrupts', 'intersecting', 'interspers', 'intersperse', 'interspersed', 'interstice', 'intertangled', 'intertinged', 'intertwined', 'intertwisting', 'intertwistings', 'interval', 'intervals', 'intervein', 'intervene', 'intervened', 'intervening', 'intervention', 'interview', 'interviewed', 'interviewer', 'interviews', 'intervolved', 'interweave', 'interweavingly', 'interwetting', 'interwove', 'interwoven', 'intestine', 'intestines', 'intill', 'intimacy', 'intimate', 'intimated', 'intimately', 'intimates', 'intimation', 'intimidated', 'into', 'intolerable', 'intolerableness', 'intolerably', 'intolerant', 'intombe', 'intonation', 'intoxicate', 'intoxicated', 'intoxication', 'intrailes', 'intrantem', 'intreat', 'intreate', 'intreated', 'intreaties', 'intreaty', 'intrench', 'intrenchant', 'intrenched', 'intrepid', 'intrepidity', 'intrepidly', 'intricacies', 'intricacy', 'intricate', 'intrigue', 'intrigues', 'intrinsically', 'introduce', 'introduced', 'introduces', 'introducing', 'introduction', 'introductions', 'introspective', 'intrude', 'intruded', 'intruder', 'intruders', 'intruding', 'intrusion', 'intrust', 'intrusted', 'intuition', 'intuitions', 'intuitive', 'intuitively', 'inuendoes', 'inuenomed', 'inuention', 'inuest', 'inuested', 'inuisible', 'inuite', 'inuites', 'inundation', 'inure', 'inured', 'inures', 'inutterable', 'invade', 'invaded', 'invader', 'invaders', 'invading', 'invalid', 'invalided', 'invalids', 'invaluable', 'invariability', 'invariable', 'invariably', 'invasion', 'invault', 'invective', 'invent', 'invented', 'inventer', 'inventers', 'inventing', 'invention', 'inventions', 'inventive', 'inventor', 'inventors', 'inventory', 'invert', 'inverted', 'invertedly', 'invest', 'invested', 'investigate', 'investigated', 'investigating', 'investigation', 'investigations', 'investigator', 'investigators', 'investing', 'investiture', 'investment', 'investments', 'invests', 'inveteracy', 'inveterate', 'invigorates', 'invigoration', 'invincible', 'inviolable', 'invisibility', 'invisible', 'invisibly', 'invitation', 'invitations', 'invite', 'invited', 'invites', 'inviting', 'invitingly', 'invocation', 'invocations', 'invoke', 'invoked', 'invoking', 'invokingly', 'involuntarily', 'involuntary', 'involution', 'involutions', 'involv', 'involve', 'involved', 'involvement', 'involves', 'involving', 'invulnerability', 'invulnerable', 'invunerable', 'inward', 'inwardly', 'inwards', 'inwove', 'inwoven', 'inwreathed', 'inwreathing']
+
+# revised to specify what to show, changed back-pointer
+# fixed back-pointer again
+# pref-regex
+34.  Now use the Porter stemmer on the set from problem [[sort-set]] (again, show
+    your code and results).  What do you notice?
+#+begin_src python :results output
+from nltk import *
+from nltk.corpus import *
+from nltk.stem import *
+import random
+
+dataset = gutenberg
+tokens = word_tokenize(dataset.raw())
+
+stemmer = PorterStemmer()
+prefixes = [
+    'anti', 'auto', 'de', 'dis', 'down', 'extra', 'hyper', 'il', 'im', 'in', 'ir', 'inter',
+    'mega', 'mid', 'mis', 'non', 'over', 'out', 'post', 'pre', 'pro', 're', 'semi', 'sub',
+    'super', 'tele', 'trans', 'ultra', 'un', 'under', 'up'
+]
+
+stemmed_words = [stemmer.stem(word) for word in prefixes]
+
+print('[{}] Stemmed Problem Words:'.format(len(stemmed_words)))
+for word in stemmed_words:
+    print(word)
+
+#+end_src
+
+#+RESULTS:
+#+begin_example
+[31] Stemmed Problem Words:
+anti
+auto
+de
+di
+down
+extra
+hyper
+il
+im
+in
+ir
+inter
+mega
+mid
+mi
+non
+over
+out
+post
+pre
+pro
+re
+semi
+sub
+super
+tele
+tran
+ultra
+un
+under
+up
+#+end_example
+
+
+** 8 Tags, Tagsets, and Tagging
+
+35.  [@35] Ask NLTK what tags the Penn Treebank tagset uses for nouns and verbs
+    (and show the result).
+
+#  <<ran-sent>> 
+
+#+begin_src python :results output
+  from nltk.corpus import brown
+  import random
+  sents = brown.sents()
+  num_sents = len(brown.sents())
+  random_sentence_index = random.randint(0, num_sents)
+  print(random_sentence_index)
+#+end_src
+
+#+results:
+: 19701
+
+36. <<ran-sent>> Import the corpus and count the number of sentences in it, discarding
+    any uninteresting front matter such as titles and chapter headings.
+    Then show a random sentence.
+#+begin_src python :results output
+from nltk.tokenize import sent_tokenize
+from nltk.corpus import gutenberg
+import random
+
+# Get the raw text from the state_union corpus
+raw_text = gutenberg.raw()
+
+# Tokenize the raw text into sentences
+sentences = sent_tokenize(raw_text)
+
+# Words to omit
+omit = ['applause', 'laughter']
+
+# Filter out sentences with all uppercase letters and omit words
+filtered_sentences = [sentence for sentence in sentences if not (sentence.isupper() or any(omit_word in sentence.lower() for omit_word in omit))]
+
+# Get the number of remaining sentences
+num_sentences = len(filtered_sentences)
+
+# Print a random sentence from the filtered list
+random_sentence = random.choice(filtered_sentences)
+
+print('[{}] sentences in corpus'.format(num_sentences))
+print('Random sentence:')
+print('\'{}\''.format(random_sentence))
+
+#+end_src
+
+#+RESULTS:
+: [93827] sentences in corpus
+: Random sentence:
+: 'spite of million villains, this makes me a bigot in the fadeless
+: fidelity of man!--and a black!'
+
+37.  Tag each token in your random sentence as 'VB'.
+
+#+begin_src python :results output
+
+from nltk.corpus import brown
+from nltk.tag import DefaultTagger
+random_sentence_index = 19701
+sents = brown.sents()
+default_tagger = DefaultTagger('VB')
+tagged_sentence = default_tagger.tag(sents[random_sentence_index])
+print(tagged_sentence)
+#+end_src
+
+#+results:
+: [('With', 'VB'), ('few', 'VB'), ('exceptions', 'VB'), (',', 'VB'), ('the', 'VB'), ('major', 'VB'), ('denominations', 'VB'), ('are', 'VB'), ('rapidly', 'VB'), ('losing', 'VB'), ('their', 'VB'), ('hold', 'VB'), ('on', 'VB'), ('the', 'VB'), ('central', 'VB'), ('city', 'VB'), ('.', 'VB')]
+
+    # <<silly-tags>>
+38. <<silly-tags>> Of course that's pretty silly, but we can make it even sillier.  Build
+	a dictionary of the incorrectly tagged words in your sentence using the
+	following tags:
+ #+begin_src python :results output
+      import nltk
+      from nltk.corpus import *
+
+      dataset = abc
+      silly_tags = ['FOO', 'BAR', 'EGO', 'NEED', 'ADS', 'DUCK', 'MANSE']
+      tokens = nltk.word_tokenize(dataset.raw())
+      incorrectly_tagged_words = dict(zip(tokens, silly_tags))
+      print("Dictionary of Incorrectly Tagged Words:")
+      print(incorrectly_tagged_words)
+    #+end_src
+
+    #+RESULTS:
+    : Dictionary of Incorrectly Tagged Words:
+    : {'PM': 'FOO', 'denies': 'BAR', 'knowledge': 'EGO', 'of': 'NEED', 'AWB': 'ADS', 'kickbacks': 'DUCK', 'The': 'MANSE'}
+
+
+
+#  [[ran-sent]]
+
+39. [@39]  <<bo-tagger>> Construct a lookup tagger trained on the 1000 most frequent words in
+    the Brown news category that backs off to a default tag of 'UNK'.  Use
+    that to tag the original random sentence you got in question [[ran-sent]].  Print
+    the result as the list of tuples in sentence order.  What do you
+    observe?
+#+begin_src python :results output
+import nltk
+from nltk.corpus import gutenberg, brown
+import random
+raw_sent = nltk.sent_tokenize(gutenberg.raw())
+omit = ['applause', 'laughter']
+filtr_sent = [sent for sent in raw_sent if not sent.isupper() and not any(omit_word in sent.lower() for omit_word in omit)]
+rand_sent = random.choice(filtr_sent)
+rand_tokens = nltk.word_tokenize(rand_sent)
+print('old-tagged sentence:')
+print(nltk.pos_tag(rand_tokens))
+brown_words = [bw.lower() for bw in brown.words(categories='news')]
+pos = nltk.pos_tag(brown_words)
+no_punc = [i for i in pos if i[1].isalpha()]
+top1000 = [word for word, _ in nltk.FreqDist(no_punc).most_common(1000)]
+tagger_train_data = [top1000[0:499], top1000[500:999]]
+lookup_tagger = nltk.UnigramTagger(tagger_train_data, backoff=nltk.DefaultTagger('UNK'))
+new_tagged_sent = lookup_tagger.tag(rand_tokens)
+print('newly-tagged sentence:')
+print(new_tagged_sent)
+print('\n\ntop 1000 words:')
+print(top1000)
+#+end_src
+
+#+RESULTS:
+: old-tagged sentence:
+: [('Cry', 'NNP'), ('within', 'IN'), (',', ','), ('Flye', 'NNP'), (',', ','), ('flye', 'NN'), (',', ','), ('flye', 'NN'), ('.', '.')]
+: newly-tagged sentence:
+: [('Cry', 'UNK'), ('within', 'IN'), (',', 'UNK'), ('Flye', 'UNK'), (',', 'UNK'), ('flye', 'UNK'), (',', 'UNK'), ('flye', 'UNK'), ('.', 'UNK')]
+: 
+: 
+: top 1000 words:
+: [('the', 'DT'), ('of', 'IN'), ('and', 'CC'), ('to', 'TO'), ('a', 'DT'), ('in', 'IN'), ('for', 'IN'), ('is', 'VBZ'), ('was', 'VBD'), ('on', 'IN'), ('he', 'PRP'), ('at', 'IN'), ('that', 'IN'), ('with', 'IN'), ('be', 'VB'), ('by', 'IN'), ('it', 'PRP'), ('as', 'IN'), ('said', 'VBD'), ('will', 'MD'), ('from', 'IN'), ('are', 'VBP'), ('this', 'DT'), ('an', 'DT'), ('has', 'VBZ'), ('but', 'CC'), ('had', 'VBD'), ('who', 'WP'), ('they', 'PRP'), ('not', 'RB'), ('were', 'VBD'), ('would', 'MD'), ('which', 'WDT'), ('new', 'JJ'), ('been', 'VBN'), ('one', 'CD'), ('have', 'VBP'), ('last', 'JJ'), ('or', 'CC'), ('two', 'CD'), ('when', 'WRB'), ('there', 'EX'), ('other', 'JJ'), ('state', 'NN'), ('all', 'DT'), ('after', 'IN'), ('that', 'WDT'), ('year', 'NN'), ('president', 'NN'), ('than', 'IN'), ('about', 'IN'), ('home', 'NN'), ('also', 'RB'), ('first', 'JJ'), ('more', 'JJR'), ('up', 'RP'), ('mrs.', 'NN'), ('no', 'DT'), ('mr.', 'NN'), ('into', 'IN'), ('some', 'DT'), ('out', 'RP'), ('that', 'DT'), ('we', 'PRP'), ('time', 'NN'), ('if', 'IN'), ('years', 'NNS'), ('three', 'CD'), ('over', 'IN'), ('house', 'NN'), ('them', 'PRP'), ('any', 'DT'), ('what', 'WP'), ('can', 'MD'), ('week', 'NN'), ('city', 'NN'), ('may', 'MD'), ('him', 'PRP'), ('under', 'IN'), ('before', 'IN'), ('school', 'NN'), ('now', 'RB'), ('could', 'MD'), ('have', 'VB'), ('i', 'NN'), ('four', 'CD'), ('only', 'RB'), ('against', 'IN'), ('she', 'PRP'), ('day', 'NN'), ('committee', 'NN'), ('man', 'NN'), ('each', 'DT'), ('members', 'NNS'), ('then', 'RB'), ('government', 'NN'), ('many', 'JJ'), ('both', 'DT'), ('here', 'RB'), ('national', 'JJ'), ('these', 'DT'), ('bill', 'NN'), ('university', 'NN'), ('since', 'IN'), ('american', 'JJ'), ('program', 'NN'), ('you', 'PRP'), ('high', 'JJ'), ('those', 'DT'), ('night', 'NN'), ('such', 'JJ'), ('did', 'VBD'), ('board', 'NN'), ('as', 'RB'), ('administration', 'NN'), ('so', 'RB'), ('should', 'MD'), ('per', 'IN'), ('even', 'RB'), ('made', 'VBN'), ('during', 'IN'), ('meeting', 'NN'), ('john', 'NN'), ('where', 'WRB'), ('county', 'NN'), ('tax', 'NN'), ('get', 'VB'), ('states', 'NNS'), ('united', 'JJ'), ('being', 'VBG'), ('white', 'JJ'), ('service', 'NN'), ('through', 'IN'), ('more', 'RBR'), ('people', 'NNS'), ('yesterday', 'NN'), ('court', 'NN'), ('back', 'RB'), ('today', 'NN'), ('because', 'IN'), ('club', 'NN'), ('must', 'MD'), ('without', 'IN'), ('federal', 'JJ'), ('sales', 'NNS'), ('i', 'JJ'), ('family', 'NN'), ('kennedy', 'NN'), ('company', 'NN'), ('work', 'NN'), ('cent', 'NN'), ('game', 'NN'), ('car', 'NN'), ('however', 'RB'), ('system', 'NN'), ('just', 'RB'), ('york', 'NN'), ('most', 'RBS'), ('while', 'IN'), ('good', 'JJ'), ('out', 'IN'), ('between', 'IN'), ('took', 'VBD'), ('1', 'CD'), ('off', 'RP'), ('told', 'VBD'), ('made', 'VBD'), ('children', 'NNS'), ('way', 'NN'), ('men', 'NNS'), ('jury', 'NN'), ('public', 'JJ'), ('education', 'NN'), ('another', 'DT'), ('world', 'NN'), ('take', 'VB'), ('five', 'CD'), ('million', 'CD'), ('local', 'JJ'), ('business', 'NN'), ('plan', 'NN'), ('got', 'VBD'), ('well', 'RB'), ('chairman', 'NN'), ('party', 'NN'), ('group', 'NN'), ('season', 'NN'), ('1961', 'CD'), ('washington', 'NN'), ('special', 'JJ'), ('big', 'JJ'), ('how', 'WRB'), ('months', 'NNS'), ('election', 'NN'), ('jr.', 'NN'), ('monday', 'NN'), ('young', 'JJ'), ('came', 'VBD'), ('p.m.', 'NN'), ('law', 'NN'), ('days', 'NNS'), ('area', 'NN'), ('among', 'IN'), ('problem', 'NN'), ('do', 'VB'), ('several', 'JJ'), ('own', 'JJ'), ('case', 'NN'), ('palmer', 'NN'), ('judge', 'NN'), ('next', 'JJ'), ('might', 'MD'), ('hospital', 'NN'), ('expected', 'VBN'), ('given', 'VBN'), ('democratic', 'JJ'), ('schools', 'NNS'), ('still', 'RB'), ('college', 'NN'), ('never', 'RB'), ('1960', 'CD'), ('center', 'NN'), ('second', 'JJ'), ('general', 'JJ'), ('session', 'NN'), ('march', 'NN'), ('too', 'RB'), ('went', 'VBD'), ('10', 'CD'), ('foreign', 'JJ'), ('mrs.', 'VB'), ('same', 'JJ'), ('ball', 'NN'), ('player', 'NN'), ('council', 'NN'), ('make', 'VB'), ('third', 'JJ'), ('league', 'NN'), ('international', 'JJ'), ('wife', 'NN'), ('j.', 'NN'), ('very', 'RB'), ('see', 'VB'), ('little', 'JJ'), ('later', 'RB'), ('u.s.', 'JJ'), ('much', 'JJ'), ('record', 'NN'), ('union', 'NN'), ('member', 'NN'), ('director', 'NN'), ('go', 'VB'), ('old', 'JJ'), ('like', 'IN'), ('&', 'CC'), ('laos', 'NN'), ('mrs.', 'JJ'), ('began', 'VBD'), ('association', 'NN'), ('2', 'CD'), ('tuesday', 'NN'), ('give', 'VB'), ('church', 'NN'), ('most', 'JJS'), ('annual', 'JJ'), ('team', 'NN'), ('ago', 'RB'), ('until', 'IN'), ('great', 'JJ'), ('labor', 'NN'), ('interest', 'NN'), ('number', 'NN'), ('department', 'NN'), ('ever', 'RB'), ('district', 'NN'), ('eight', 'CD'), ('secretary', 'NN'), ('field', 'NN'), ('again', 'RB'), ('equipment', 'NN'), ('month', 'NN'), ('texas', 'NN'), ('only', 'JJ'), ('part', 'NN'), ('country', 'NN'), ('far', 'RB'), ('me', 'PRP'), ('industry', 'NN'), ('congo', 'NN'), ('laws', 'NNS'), ('result', 'NN'), ('major', 'JJ'), ('money', 'NN'), ('mrs.', 'FW'), ('taken', 'VBN'), ('down', 'RP'), ('james', 'NNS'), ('dr.', 'NN'), ('firm', 'NN'), ('up', 'RB'), ('few', 'JJ'), ('military', 'JJ'), ('central', 'JJ'), ('s.', 'NN'), ('street', 'NN'), ('runs', 'NNS'), ('place', 'NN'), ('possible', 'JJ'), ('funds', 'NNS'), ('bonds', 'NNS'), ('series', 'NN'), ('six', 'CD'), ('first', 'RB'), ('soviet', 'JJ'), ('hotel', 'NN'), ('mantle', 'NN'), ('political', 'JJ'), ('office', 'NN'), ('present', 'JJ'), ('says', 'VBZ'), ('every', 'DT'), ('sunday', 'NN'), ('aid', 'NN'), ('former', 'JJ'), ('w.', 'NN'), ('staff', 'NN'), ('north', 'JJ'), ('countries', 'NNS'), ('small', 'JJ'), ('play', 'VB'), ('fire', 'NN'), ('added', 'VBD'), ('together', 'RB'), ('senate', 'NN'), ('issue', 'NN'), ('a.', 'NN'), ('war', 'NN'), ('early', 'JJ'), ('baseball', 'NN'), ('stock', 'NN'), ('all', 'PDT'), ('police', 'NN'), ('daughter', 'NN'), ('does', 'VBZ'), ('4', 'CD'), ('c.', 'NN'), ('weeks', 'NNS'), ('mr.', 'JJ'), ('around', 'IN'), ('conference', 'NN'), ('along', 'IN'), ('miss', 'JJ'), ('higher', 'JJR'), ('market', 'NN'), ('best', 'JJS'), ('fact', 'NN'), ('attorney', 'NN'), ('top', 'JJ'), ('b.', 'NN'), ('received', 'VBD'), ('persons', 'NNS'), ('almost', 'RB'), ('do', 'VBP'), ('including', 'VBG'), ('dallas', 'NNS'), ('3', 'CD'), ('project', 'NN'), ('large', 'JJ'), ('called', 'VBN'), ('co.', 'NN'), ('republican', 'JJ'), ('nations', 'NNS'), ('minutes', 'NNS'), ('course', 'NN'), ('single', 'JJ'), ('son', 'NN'), ('done', 'VBN'), ('asked', 'VBD'), ('real', 'JJ'), ('students', 'NNS'), ('long', 'RB'), ('able', 'JJ'), ('st.', 'NN'), ('20', 'CD'), ('leader', 'NN'), ('games', 'NNS'), ('british', 'JJ'), ('collection', 'NN'), ('held', 'VBN'), ('according', 'VBG'), ('toward', 'IN'), ('act', 'NN'), ('d.', 'NN'), ('george', 'NN'), ('final', 'JJ'), ('effort', 'NN'), ('hours', 'NNS'), ('community', 'NN'), ('defense', 'NN'), ('room', 'NN'), ('statement', 'NN'), ('past', 'JJ'), ('set', 'VBN'), ('communist', 'JJ'), ('victory', 'NN'), ('leaders', 'NNS'), ('saturday', 'NN'), ('yankees', 'NNS'), ('yards', 'NNS'), ('maris', 'NN'), ('legislature', 'NN'), ('services', 'NNS'), ('8', 'CD'), ('vote', 'NN'), ('making', 'VBG'), ('action', 'NN'), ('support', 'NN'), ('long', 'JJ'), ('order', 'NN'), ('jones', 'NNS'), ('report', 'NN'), ('although', 'IN'), ('pay', 'VB'), ('army', 'NN'), ('meet', 'VB'), ('matter', 'NN'), ('social', 'JJ'), ('going', 'VBG'), ('policy', 'NN'), ('line', 'NN'), ('gave', 'VBD'), ('once', 'RB'), ('efforts', 'NNS'), ('point', 'NN'), ('town', 'NN'), ('traffic', 'NN'), ('dinner', 'NN'), ('u.s.', 'NN'), ('late', 'JJ'), ('libraries', 'NNS'), ('end', 'NN'), ('announced', 'VBD'), ('race', 'NN'), ('relations', 'NNS'), ('there', 'RB'), ('resolution', 'NN'), ('himself', 'PRP'), ('charles', 'NNS'), ('hughes', 'NNS'), ('question', 'NN'), ('san', 'JJ'), ('12', 'CD'), ('trial', 'NN'), ('tomorrow', 'NN'), ('rather', 'RB'), ('billion', 'CD'), ('within', 'IN'), ('richard', 'NN'), ('period', 'NN'), ('1959', 'CD'), ('think', 'VBP'), ('income', 'NN'), ('u.', 'JJ'), ('manager', 'NN'), ('run', 'NN'), ('anti-trust', 'JJ'), ('recent', 'JJ'), ('provide', 'VB'), ('friday', 'NN'), ('william', 'NN'), ('upon', 'IN'), ('became', 'VBD'), ('sunday', 'JJ'), ('congress', 'NN'), ('18', 'CD'), ('rules', 'NNS'), ('probably', 'RB'), ('need', 'NN'), ('kind', 'NN'), ('history', 'NN'), ('football', 'NN'), ('others', 'NNS'), ('full', 'JJ'), ('student', 'NN'), ('air', 'NN'), ('times', 'NNS'), ('women', 'NNS'), ('open', 'JJ'), ('life', 'NN'), ('private', 'JJ'), ('away', 'RB'), ('15', 'CD'), ('farm', 'NN'), ('show', 'NN'), ('machinery', 'NN'), ('library', 'NN'), ('belgians', 'NNS'), ('grand', 'JJ'), ('costs', 'NNS'), ('prices', 'NNS'), ('medical', 'JJ'), ('health', 'NN'), ('held', 'VBD'), ('governor', 'NN'), ('head', 'NN'), ('afternoon', 'NN'), ('fund', 'NN'), ('1958', 'CD'), ('research', 'NN'), ('certain', 'JJ'), ('over', 'RP'), ('better', 'JJR'), ('decided', 'VBD'), ('development', 'NN'), ('30', 'CD'), ('island', 'NN'), ('problems', 'NNS'), ('themselves', 'PRP'), ('used', 'VBN'), ('nine', 'CD'), ('organization', 'NN'), ('control', 'NN'), ('power', 'NN'), ('h.', 'NN'), ('so', 'IN'), ('hand', 'NN'), ('avenue', 'NN'), ('off', 'IN'), ('portland', 'NN'), ('shares', 'NNS'), ('charge', 'NN'), ('mayor', 'NN'), ('getting', 'VBG'), ('whether', 'IN'), ('wanted', 'VBD'), ('battle', 'NN'), ('similar', 'JJ'), ('companies', 'NNS'), ('dallas', 'NN'), ('bills', 'NNS'), ('future', 'NN'), ('f.', 'NN'), ('least', 'JJS'), ('corps', 'NN'), ('cases', 'NNS'), ('already', 'RB'), ('lines', 'NNS'), ('11', 'CD'), ('rule', 'NN'), ('cars', 'NNS'), ('economic', 'JJ'), ('down', 'RB'), ('officers', 'NNS'), ('necessary', 'JJ'), ('7', 'CD'), ('boy', 'NN'), ('society', 'NN'), ('reason', 'NN'), ('jack', 'NN'), ('hole', 'NN'), ('coach', 'NN'), ('plane', 'NN'), ('playing', 'VBG'), ('won', 'VBD'), ('award', 'NN'), ('music', 'NN'), ('guests', 'NNS'), ('robert', 'NN'), ('library', 'JJ'), ('evidence', 'NN'), ('effect', 'NN'), ('m.', 'NN'), ('property', 'NN'), ('candidate', 'NN'), ('campaign', 'NN'), ('road', 'NN'), ('yet', 'RB'), ('saw', 'VBD'), ('soon', 'RB'), ('seven', 'CD'), ('22', 'CD'), ('attack', 'NN'), ('security', 'NN'), ('workers', 'NNS'), ('housing', 'NN'), ('hour', 'NN'), ('individual', 'JJ'), ('forces', 'NNS'), ('situation', 'NN'), ('25', 'CD'), ('complete', 'JJ'), ('right', 'JJ'), ('position', 'NN'), ('smith', 'NN'), ('front', 'NN'), ('total', 'JJ'), ('friday', 'JJ'), ('art', 'NN'), ('golf', 'NN'), ('book', 'NN'), ('christian', 'JJ'), ('date', 'NN'), ('welfare', 'NN'), ('operation', 'NN'), ('13', 'CD'), ('despite', 'IN'), ('earlier', 'RBR'), ('construction', 'NN'), ('plans', 'NNS'), ('increase', 'NN'), ('something', 'NN'), ('price', 'NN'), ('left', 'VBD'), ('bank', 'NN'), ('designed', 'VBN'), ('6', 'CD'), ('attend', 'VB'), ('coming', 'VBG'), ('e.', 'NN'), ('frank', 'JJ'), ('commission', 'NN'), ('taking', 'VBG'), ('reported', 'VBD'), ('junior', 'JJ'), ('working', 'VBG'), ('much', 'RB'), ('help', 'NN'), ('hill', 'NN'), ('up', 'IN'), ('amount', 'NN'), ('demand', 'NN'), ('announced', 'VBN'), ('spring', 'NN'), ('south', 'JJ'), ('spirit', 'NN'), ('civil', 'JJ'), ('job', 'NN'), ('theater', 'NN'), ('joseph', 'NN'), ('religious', 'JJ'), ('park', 'NN'), ('share', 'NN'), ('nearly', 'RB'), ('feet', 'NNS'), ('bring', 'VB'), ('force', 'NN'), ('products', 'NNS'), ('cotton', 'NN'), ('mother', 'NN'), ('mrs.', 'NNS'), ('generally', 'RB'), ('effective', 'JJ'), ('receive', 'VB'), ('found', 'VBD'), ('georgia', 'NN'), ('asked', 'VBN'), ('work', 'VB'), ('apparently', 'RB'), ('word', 'NN'), ('event', 'NN'), ('i', 'VB'), ('dollars', 'NNS'), ('merely', 'RB'), ('firms', 'NNS'), ('return', 'NN'), ('summer', 'NN'), ('actually', 'RB'), ('care', 'NN'), ('railroad', 'NN'), ('needed', 'VBN'), ('fine', 'JJ'), ('thing', 'NN'), ('side', 'NN'), ('come', 'VB'), ('found', 'VBN'), ('providence', 'NN'), ('basis', 'NN'), ('station', 'NN'), ('know', 'VB'), ('across', 'IN'), ('i', 'VBP'), ('charter', 'NN'), ('100', 'CD'), ('jim', 'NN'), ('division', 'NN'), ('green', 'JJ'), ('stage', 'NN'), ('example', 'NN'), ('wednesday', 'NN'), ('robinson', 'NN'), ('st.', 'JJ'), ('nor', 'CC'), ('thomas', 'NN'), ('coal', 'NN'), ('executive', 'NN'), ('often', 'RB'), ('cost', 'NN'), ('counties', 'NNS'), ('additional', 'JJ'), ('officials', 'NNS'), ('legislation', 'NN'), ('strong', 'JJ'), ('blue', 'JJ'), ('near', 'IN'), ('17', 'CD'), ('houston', 'NN'), ('why', 'WRB'), ('proposal', 'NN'), ('r.', 'NN'), ('serious', 'JJ'), ('martin', 'NN'), ('involved', 'VBN'), ('base', 'NN'), ('floor', 'NN'), ('particularly', 'RB'), ('nuclear', 'JJ'), ('perhaps', 'RB'), ('interested', 'JJ'), ('trade', 'NN'), ('growth', 'NN'), ('important', 'JJ'), ('l.', 'NN'), ('having', 'VBG'), ('level', 'NN'), ('parties', 'NNS'), ('value', 'NN'), ('using', 'VBG'), ('fall', 'NN'), ('am', 'VBP'), ('failed', 'VBD'), ('wagner', 'NN'), ('g.', 'NN'), ('june', 'NN'), ('conspiracy', 'NN'), ('khrushchev', 'NN'), ('agreement', 'NN'), ('one', 'NN'), ('enough', 'RB'), ('father', 'NN'), ('5', 'CD'), ('news', 'NN'), ('14', 'CD'), ('total', 'NN'), ('happy', 'JJ'), ('bob', 'NN'), ('catholic', 'JJ'), ('food', 'NN'), ('faculty', 'NN'), ('gallery', 'NN'), ('term', 'NN'), ('voters', 'NNS'), ('fees', 'NNS'), ('couple', 'NN'), ('henry', 'NN'), ('highway', 'NN'), ('test', 'NN'), ('paid', 'VBN'), ('set', 'VB'), ('put', 'VBD'), ('texas', 'JJ'), ('measure', 'NN'), ('help', 'VB'), ('current', 'JJ'), ('books', 'NNS'), ('population', 'NN'), ('tell', 'VB'), ("'", 'POS'), ('letters', 'NNS'), ('sent', 'VBD'), ('thursday', 'NN'), ('senator', 'NN'), ('west', 'NN'), ('called', 'VBD'), ('indicated', 'VBD'), ('television', 'NN'), ('building', 'NN'), ('scheduled', 'VBN'), ('9', 'CD'), ('grants', 'NNS'), ('payroll', 'NN'), ('use', 'NN'), ('boston', 'NN'), ('groups', 'NNS'), ('nation', 'NN'), ('headquarters', 'NN'), ('luncheon', 'NN'), ('vice', 'NN'), ('us', 'PRP'), ('really', 'RB'), ('started', 'VBD'), ('view', 'NN'), ('start', 'VB'), ('above', 'IN'), ('decision', 'NN'), ('round', 'NN'), ('miles', 'NNS'), ('turned', 'VBD'), ('friends', 'NNS'), ('revenues', 'NNS'), ('know', 'VBP'), ('churches', 'NNS'), ('thought', 'VBD'), ('opening', 'NN'), ('verdict', 'NN'), ('hits', 'NNS'), ('start', 'NN'), ('short', 'JJ'), ('players', 'NNS'), ('condition', 'NN'), ('tournament', 'NN'), ('husband', 'NN'), ('marriage', 'NN'), ('orchestra', 'NN'), ('unions', 'NNS'), ('secrets', 'NNS'), ('gin', 'NN'), ('concert', 'NN'), ('fulton', 'NN'), ('follow', 'VB'), ('greater', 'JJR'), ('weekend', 'NN'), ('williams', 'NNS'), ('aj', 'NN'), ('brought', 'VBD'), ('audience', 'NN'), ('bond', 'NN'), ('areas', 'NNS'), ('worth', 'NN'), ('roads', 'NNS'), ('authority', 'NN'), ('leading', 'VBG'), ('p.', 'NN'), ('shot', 'NN'), ('austin', 'NN'), ('seemed', 'VBD'), ('personal', 'JJ'), ('lawrence', 'NN'), ('enough', 'JJ'), ('agency', 'NN'), ('coast', 'NN'), ('plus', 'CC'), ('april', 'NN'), ('further', 'JJ'), ('water', 'NN'), ('public', 'NN'), ('addition', 'NN'), ('address', 'NN'), ('east', 'JJ'), ('americans', 'NNS'), ('programs', 'NNS'), ('following', 'VBG'), ('use', 'VB'), ('pressure', 'NN'), ('chief', 'NN'), ('immediate', 'JJ'), ('reported', 'VBN'), ('changes', 'NNS'), ('achievement', 'NN'), ('hardly', 'RB'), ('felt', 'VBD'), ('youth', 'NN'), ('sense', 'NN'), ('opinion', 'NN'), ('section', 'NN'), ('want', 'VBP'), ('explained', 'VBD'), ('movement', 'NN'), ('name', 'NN'), ('commissioner', 'NN'), ('shown', 'VBN'), ('monday', 'JJ'), ('thompson', 'NN'), ('reasons', 'NNS'), ('beach', 'NN'), ('had', 'VBN'), ('hands', 'NNS'), ('say', 'VBP'), ('though', 'IN'), ('contract', 'NN'), ('wide', 'JJ'), ('ap', 'NN'), ('modern', 'JJ'), ('rev.', 'NN'), ('drive', 'NN'), ('winning', 'VBG'), ('fourth', 'JJ'), ('play', 'NN'), ('champion', 'NN'), ('played', 'VBD'), ("don't", 'VBP'), ('hit', 'VB'), ('giants', 'NNS'), ('black', 'JJ'), ('driven', 'VBN'), ('investigation', 'NN'), ('primary', 'JJ'), ('reports', 'NNS'), ('legislators', 'NNS'), ('personnel', 'NNS'), ('previous', 'JJ'), ('citizens', 'NNS'), ('jan.', 'NN'), ('age', 'NN'), ('face', 'NN'), ('unit', 'NN'), ('become', 'VB'), ('study', 'NN'), ('rural', 'JJ'), ('ready', 'JJ'), ('post', 'NN'), ('bankers', 'NNS'), ('fight', 'NN'), ('howard', 'NN'), ('gas', 'NN'), ('affairs', 'NNS'), ('information', 'NN'), ('except', 'IN'), ('person', 'NN'), ('immediately', 'RB'), ('color', 'NN'), ('knew', 'VBD'), ('honor', 'NN'), ('say', 'VB'), ('200', 'CD'), ('grant', 'NN'), ('21', 'CD'), ('basic', 'JJ'), ('track', 'NN'), ('arms', 'NNS'), ('leadership', 'NN'), ('prevent', 'VB'), ('possibility', 'NN'), ('free', 'JJ'), ('cuba', 'NN'), ('morton', 'NN'), ('clearly', 'RB'), ('early', 'RB'), ('negotiations', 'NNS'), ('declared', 'VBD'), ('anyone', 'NN'), ('financial', 'JJ'), ('vital', 'JJ'), ('things', 'NNS'), ('mary', 'JJ'), ('especially', 'RB'), ('known', 'VBN'), ('presented', 'VBN'), ('left', 'JJ'), ('60', 'CD'), ('become', 'VBN'), ('running', 'VBG'), ('police', 'NNS'), ('try', 'VB'), ('land', 'NN'), ('opportunity', 'NN'), ('performance', 'NN'), ('seems', 'VBZ'), ('america', 'NN'), ('moscow', 'NN'), ('successful', 'JJ'), ('n.', 'JJ'), ('professional', 'JJ'), ('orleans', 'NNS'), ('loss', 'NN'), ('appeared', 'VBD'), ('charges', 'NNS'), ('expansion', 'NN'), ('apartment', 'NN'), ('owners', 'NNS'), ('driving', 'VBG'), ('entire', 'JJ'), ('bargaining', 'NN'), ('mark', 'NN'), ('a.m.', 'NN'), ('straight', 'JJ'), ('fashion', 'NN'), ('stadium', 'NN'), ('paid', 'VBD'), ('lead', 'NN'), ('19', 'CD'), ('chicago', 'NN'), ('recently', 'RB'), ('bus', 'NN'), ('makes', 'VBZ'), ('shop', 'NN'), ('throughout', 'IN'), ('employees', 'NNS'), ('wages', 'NNS'), ('arrested', 'VBN'), ('investment', 'NN'), ('hillsboro', 'NN'), ('investors', 'NNS'), ('ballet', 'NN'), ('independence', 'NN'), ('atlanta', 'NN'), ('find', 'VB'), ('policies', 'NNS'), ('urged', 'VBD'), ('available', 'JJ'), ('elected', 'VBN')]
+
+#  ran-sent and bo-tagger
+40. [@40] For your random sentence found in question [[ran-sent]] tagged with
+    the tagger you built in question [[bo-tagger]], write a
+    transformational rule the Brill tagger might discover for the each of
+    the first three UNK tags.  Put these in an example block as ordinary
+    text, /e.g./:
+Example Transformational Rule for the First "UNK" Tag:
+
+Original Sentence: "He had nothing to urge against it, but still resisted the idea of a letter of proper submission."
+Brill Rule: If the word is "nothing" and the preceding word is "had," change the tag to "NN."
+Example Transformational Rule for the Second "UNK" Tag:
+
+Original Sentence: "He had nothing to urge against it, but still resisted the idea of a letter of proper submission."
+Brill Rule: If the word is "urge" and the preceding word is "to," change the tag to "VB."
+Example Transformational Rule for the Third "UNK" Tag:
+
+Original Sentence: "He had nothing to urge against it, but still resisted the idea of a letter of proper submission."
+Brill Rule: If the word is "submission" and the preceding word is "proper," change the tag to "NN."
+These example transformational rules are based on the context and patterns observed in the given sentence. The Brill tagger would learn similar rules from a training corpus to improve tagging accuracy.
+
+
+# <<to-gram>>
+41. [@41]  <<to-gram>> Example 2.2 in [[http://www.nltk.org/book/ch07.html][chapter 7]] shows a little grammar for noun phrase
+    chunking.  Let's mix it up a bit and define a grammar for "to phrases":
+    bigrams that begin with the tag =TO=.  Show the total parse and just
+    the "to phrases" (just edit away the rest unless you feel like getting
+    fancy). Use the following sentence to build and test your grammar:
+#+begin_src python :results output
+import nltk
+from nltk.chunk import RegexpParser
+
+tj = [('He', 'PPS'), ('had', 'HVD'), ('nothing', 'UNK'), ('to', 'TO'), ('urge', 'UNK'), 
+      ('against', 'IN'), ('it', 'PPS'), (',', ','), ('but', 'CC'), ('still', 'RB'), 
+      ('resisted', 'UNK'), ('the', 'AT'), ('idea', 'UNK'), ('of', 'IN'), ('a', 'AT'), 
+      ('letter', 'UNK'), ('of', 'IN'), ('proper', 'UNK'), ('submission', 'UNK'), (';', '.'), 
+      ('and', 'CC'), ('therefore', 'UNK'), (',', ','), ('to', 'TO'), ('make', 'VB'), 
+      ('it', 'PPS'), ('easier', 'UNK'), ('to', 'TO'), ('him', 'PPO'), (',', ','), 
+      ('as', 'CS'), ('he', 'PPS'), ('declared', 'VBD'), ('a', 'AT'), ('much', 'AP'), 
+      ('greater', 'UNK'), ('willingness', 'UNK'), ('to', 'TO'), ('make', 'VB'), 
+      ('mean', 'UNK'), ('concessions', 'UNK'), ('by', 'IN'), ('word', 'NN'), ('of', 'IN'), 
+      ('mouth', 'UNK'), ('than', 'IN'), ('on', 'IN'), ('paper', 'UNK'), (',', ','), ('it', 'PPS'), 
+      ('was', 'BEDZ'), ('resolved', 'UNK'), ('that', 'CS'), (',', ','), 
+      ('instead', 'UNK'), ('of', 'IN'), ('writing', 'UNK'), ('to', 'TO'), 
+      ('Fanny', 'UNK'), (',', ','), ('he', 'PPS'), ('should', 'MD'), ('go', 'VB'), 
+      ('to', 'TO'), ('London', 'UNK'), (',', ','), ('and', 'CC'), ('personally', 'UNK'), 
+      ('intreat', 'UNK'), ('her', 'PP$'), ('good', 'JJ'), ('offices', 'UNK'), ('in', 'IN'), 
+      ('his', 'PP$'), ('favour', 'UNK'), ('.--', 'UNK'), ('"', 'UNK'), ('And', 'CC'), 
+      ('if', 'CS'), ('they', 'PPSS'), ('really', 'RB'), ('DO', 'UNK'), ('interest', 'NN'), 
+      ('themselves', 'PPLS'), (',"', 'UNK'), ('said', 'VBD'), ('Marianne', 'UNK'), 
+      (',', ','), ('in', 'IN'), ('her', 'PP$'), ('new', 'JJ'), ('character', 'UNK'), 
+      ('of', 'IN'), ('candour', 'UNK'), (',', ','), ('"', 'UNK'), ('in', 'IN'), 
+      ('bringing', 'UNK'), ('about', 'IN'), ('a', 'AT'), ('reconciliation', 'UNK'), 
+      (',', ','), ('I', 'PPSS'), ('shall', 'UNK'), ('think', 'VB'), ('that', 'CS'), 
+      ('even', 'RB'), ('John', 'NP'), ('and', 'CC'), ('Fanny', 'UNK'), ('are', 'BER'), 
+      ('not', '*'), ('entirely', 'UNK'), ('without', 'IN'), ('merit', 'UNK'), ('."', 'UNK')]
+grammar = r"""
+    TO_Phrase: {<TO><.*>}
+"""
+chunk_parser = RegexpParser(grammar)
+result = chunk_parser.parse(tj)
+print(result[:10])
+for subtree in result.subtrees():
+    if subtree.label() == 'TO_Phrase':
+        print(subtree)
+#+end_src
+
+#+RESULTS:
+: [('He', 'PPS'), ('had', 'HVD'), ('nothing', 'UNK'), Tree('TO_Phrase', [('to', 'TO'), ('urge', 'UNK')]), ('against', 'IN'), ('it', 'PPS'), (',', ','), ('but', 'CC'), ('still', 'RB'), ('resisted', 'UNK')]
+: (TO_Phrase to/TO urge/UNK)
+: (TO_Phrase to/TO make/VB)
+: (TO_Phrase to/TO him/PPO)
+: (TO_Phrase to/TO make/VB)
+: (TO_Phrase to/TO Fanny/UNK)
+: (TO_Phrase to/TO London/UNK)
+
+#  [[to-gram]], 40
+42.  [@42] What do you observe in your results for question [[to-gram]]?  Why do you think
+    this is happening?
+    This grammar rule is defined to capture sequences that start with the word "to" (tagged as "TO") followed by any sequence of words (denoted by "<.*>"). It is used to extract phrases that begin with "to" in the provided text.
+
+The observations from the results are as follows:
+
+The code successfully identifies and tags phrases that start with "to" in the input text.
+These identified phrases are marked with the label "TO_Phrase" in the parsed output.
+This behavior is happening because the defined grammar rule (TO_Phrase) instructs the parser to find and group such sequences. This is a typical use case of regular expressions in natural language processing to identify specific patterns or phrases within text data.
+
+
+
+
+* Grading Scale
+
+# revised <2021-10-14 Thu> to correct typo
+
+This homework is worth 15 points.  Complete answers for question 1, here
+and in the Slack channel, are required: otherwise /no/ points will be
+awarded.  The grading scale is:
+
+| fraction correctly reviewed and answered | points awarded |
+|------------------------------------------+----------------|
+| \(\ge 0.95\)                             |             15 |
+| 0.90 -- 0.94                             |             14 |
+| 0.85 -- 0.89                             |             13 |
+| 0.80 -- 0.84                             |             12 |
+| 0.75 -- 0.79                             |             11 |
+| 0.70 -- 0.74                             |             10 |
+| 0.65 -- 0.69                             |              9 |
+| 0.60 -- 0.64                             |              8 |
+| 0.55 -- 0.59                             |              7 |
+| 0.50 -- 0.54                             |              6 |
+| 0.45 -- 0.49                             |              5 |
+| 0.40 -- 0.44                             |              4 |
+| 0.35 -- 0.39                             |              3 |
+| 0.30 -- 0.34                             |              2 |
+| 0.25 -- 0.29                             |              1 |
+| \(< 0.25\)                               |              0 |
+
+
+
+
+* Scoring
+
+
+
+
+|     question | ok? |
+|--------------+-----|
+|            1 |     |
+|            2 |     |
+|            3 |     |
+|            4 |     |
+|            5 |     |
+|            6 |     |
+|            7 |     |
+|            8 |     |
+|            9 |     |
+|           10 |     |
+|           11 |     |
+|           12 |     |
+|           13 |     |
+|           14 |     |
+|           15 |     |
+|           16 |     |
+|           17 |     |
+|           18 |     |
+|           19 |     |
+|           20 |     |
+|           21 |     |
+|           22 |     |
+|           23 |     |
+|           24 |     |
+|           25 |     |
+|           26 |     |
+|           27 |     |
+|           28 |     |
+|           29 |     |
+|           30 |     |
+|           31 |     |
+|           32 |     |
+|           33 |     |
+|           34 |     |
+|           35 |     |
+|           36 |     |
+|           37 |     |
+|           38 |     |
+|           39 |     |
+|           40 |     |
+|           41 |     |
+|           42 |   0 |
+|--------------+-----|
+|  total score |   0 |
+|     fraction |   0 |
+| total points |     |
+#+TBLFM: @44$2=vsum(@I..@II)::@45$2=@-1/(@-2$1)
+
