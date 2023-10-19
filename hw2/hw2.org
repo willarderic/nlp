@@ -1,0 +1,835 @@
+#+title: Homework 2: Formal Languages, Parsing, and Semantics
+#+author: Toni Kazic
+#+date: Fall, 2023
+
+
+# revised <2021-09-25 Sat>
+
+#+SETUPFILE: "../../../common/preamble.org"
+#+LATEX_CLASS: article
+#+OPTIONS: toc:nil
+#+OPTIONS: ^:nil
+
+#+LATEX_HEADER: \usepackage{langsci-avm}
+# http://ftp.math.purdue.edu/mirrors/ctan.org/macros/latex/contrib/langsci-avm/langsci-avm.pdf
+# and see also
+# https://userblogs.fu-berlin.de/langsci-press/2020/04/20/writing-avms-easily-in-latex-the-new-langsci-avm-package/
+
+
+#+LATEX_HEADER: \newcommand{\grmr}[2]{\ensuremath{\mathrm{#1} & \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\txtgrmr}[2]{\ensuremath{\mathrm{#1} \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\grmrhs}[1]{\ensuremath{& \,\longrightarrow\, \mathrm{#1} }}
+#+LATEX_HEADER: \newcommand{\wa}[1]{\type{\textnormal{\w{#1}}}}
+
+# compile with pdflatex
+#
+# Kazic, 3.11.2020
+
+
+
+* Introduction
+
+In this homework, the syntactic and semantic rubber hits the road.  This
+homework introduces the deeper structures of language, especially when
+phrased formally; looks at syntax and parsing; and extends the notion of
+parsing to semantics.
+
+
+
+* Who's Who and Solution Patterns
+<<whoswho>>
+
+
+
+** Group Members
+
+| first name last name | color                         |
+|----------------------+-------------------------------|
+| Eric                 | green \color{green}\rule{5mm}{3mm} |
+| Mrigdala             | yellow \color{yellow}\rule{5mm}{3mm} |
+| Santosh              | purple \color{violet}\rule{5mm}{3mm} |
+
+
+
+
+** Two Member Solution Patterns
+
+| color                         | draft solution | revise solution |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | odds           | evens           |
+| yellow \color{yellow}\rule{5mm}{3mm} | evens          | odds            |
+
+
+** Three Member Solution Patterns
+
+$i$ is the question number.
+
+#+begin_center
+#+ATTR_LaTeX: :mode inline-math :environment array
+| \text{color}                  | \text{draft solution} | \text{revise solution} |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | i \mod 3 = 1   | i \mod 3 = 0    |
+| yellow \color{yellow}\rule{5mm}{3mm} | i \mod 3 = 2   | i \mod 3 = 1    |
+| purple \color{violet}\rule{5mm}{3mm} | i \mod 3 = 0   | i \mod 3 = 2    |
+#+end_center
+
+
+* General Instructions
+
+
+   + /Fill out the group members table and follow the solution patterns/ in
+     Section [[whoswho]].
+
+   + /If the question is unclear, tell me your interpretation of it as part
+     of your answer./  Feel free to ask about the questions in class or on
+     the Slack channel (use =@channel= as others will probably be puzzled
+     too). 
+
+   + /For questions using corpora, use the corpus of the lead person./
+
+   + /Put your draft answers right after each question using a *complete,
+     functional* =org= mode code or example block./ Make sure your code
+     block is complete and functional by testing it in your copy of this
+     homework file.
+
+   + /Each group member reviews the others' draft solutions and you revise them together/.
+
+   + /Discuss each other's draft and reviews, finalizing the answers./
+
+   + /Show all your work: code, results, and analysis./  Does your code
+     work in this file and produce *exactly* the results you show? 
+
+   + /Post the completed file to Canvas no later than noon on the Tuesday
+     indicated/ in the [[../syllabus.org::schedule][schedule in the syllabus]], naming your file with each
+     person's first name (no spaces in the file name, and don't forget the
+     =.org= extension!).  Only one person should submit the final file.
+
+
+* Hints
+
+
+** Make sure the structure of the grammar can be parsed by the parser.
+
+For example, a recursive descent parser cannot terminate the parse of a
+left-recursive grammar.
+
+
+
+** Use re-entrancy if you need it.
+
+=NLTK= has some notation for this.
+
+
+
+
+* Questions
+
+1. [@1] <<prod-rules>> Remember those silly tags from [[file:./hw1.org::silly-tags][hw1.org]]?  Let
+#
+#
+\begin{align}
+N &= \{ \textrm{FOO,BAR,EGO,NEED,ADS,DUCK,MANSE} \} \ \text{and} \nonumber \\
+T &= \{ \w{dog, black, racing, was, squirrel, tree, burrow, ground hog, bushes, towards,
+hunting, back, wee} \}  \nonumber
+\end{align}
+#
+For each of the following production rules, state from which class of
+language they come and /show why/ by derivation from the language definitions.
+   + rule 1 :: $\txtgrmr{FOO}{EGO \ NEED \ DUCK}$
+     - This rule describes a context free language as the left side is a
+       nonterminal symbol and the right side contains contains only terminals.
+   + rule 2 :: $\txtgrmr{FOO \ DUCK}{EGO \ NEED \ DUCK}$
+     - Rule 2 describes a context-sensitive grammar. There are two
+       nonterminals of the left side of the production and 3 nonterminals
+       on the right.
+   + rule 3 :: $\txtgrmr{FOO}{EGO \ \w{dog} \ DUCK}$
+     - Rule 3 is a context free grammar as it has one nonterminal on the
+       right side of the production and is a combination of terminal and
+       nonterminals on the left.
+   + rule 4 :: $\txtgrmr{FOO \ \w{ground hog}}{EGO \ \w{dog} \ DUCK \
+     \w{squirrel}}$
+     - Context-sensitive? Or mildly context-sensitive?
+   + rule 5 :: $\txtgrmr{FOO}{\w{black} \ \w{dog} \ DUCK}$
+     - Rule 5 is a regular grammar. There is a nonterminal on the left side
+       and on the right are two terminals followed by a nonterminal.  
+
+
+2. [@2] <<which-recursn>> Consider the following grammar.
+#+BEGIN_EXAMPLE
+N = {A,B,C,D}
+T = {foo,bar}
+S = {C}
+P = {C -> A B
+     B -> A D
+     B -> A
+     D -> A A
+     A -> T
+     }
+#+END_EXAMPLE
+Is the grammar left-, right-, neither-, or both-recursive?  Why?
+
+The above grammar is neither right-, nor left-recursive. For any of the
+productions, none of the LHS nonterminals show up in their RHS production
+rule, nor do they show up in any of their downstream production rules,
+therefore there is no recursion in the grammar.
+
+
+3. [@3] <<manual-parse>> By hand, generate a construct for each unique
+   length of output using the grammar of question [[which-recursn]] and show
+   them and their derivation as an =org= table:
+
+There is one parse of length 2, and a parse of length 4
+C -> A B -> T B -> T A -> T T
+C -> A B -> T B -> T A D -> T T D -> T T A A -> T T T A -> T T T T
+
+| sentence        | rule sequence and comments                                |
+|-----------------+-----------------------------------------------------------|
+ foo bar            C -> A B -> foo B -> foo A -> foo bar
+ foo foo            C -> A B -> foo B -> foo A -> foo foo
+ bar foo            C -> A B -> bar B -> bar A -> bar foo
+ bar bar            C -> A B -> bar B -> bar A -> bar bar
+
+ foo bar foo bar    C -> A B -> foo B -> foo A D -> foo bar D -> foo bar A A
+                    -> foo bar foo bar
+ foo foo foo foo    C -> A B -> foo B -> foo A D -> foo foo D -> foo foo A A
+                    -> foo foo foo foo
+ foo foo foo bar    C -> A B -> foo B -> foo A D -> foo foo D -> foo foo A A
+                    -> foo foo foo bar
+ foo foo bar foo    C -> A B -> foo B -> foo A D -> foo foo D -> foo foo A A
+                    -> foo foo bar foo
+ foo foo bar bar    C -> A B -> foo B -> foo A D -> foo foo D -> foo foo A A
+                    -> foo foo bar bar
+ foo bar foo foo    C -> A B -> foo B -> foo A D -> foo bar D -> foo bar A A
+                    -> foo bar foo foo
+ foo bar bar foo    C -> A B -> foo B -> foo A D -> foo bar D -> foo bar A A
+                    -> foo bar bar foo
+ foo bar bar bar    C -> A B -> foo B -> foo A D -> foo bar D -> foo bar A A
+                    -> foo bar bar bar
+ bar bar foo bar    C -> A B -> bar B -> bar A D -> bar bar D -> bar bar A A
+                    -> bar bar foo bar
+ bar foo foo foo    C -> A B -> bar B -> bar A D -> bar foo D -> bar foo A A
+                    -> bar foo foo foo
+ bar foo foo bar    C -> A B -> bar B -> bar A D -> bar foo D -> bar foo A A
+                    -> bar foo foo bar
+ bar foo bar foo    C -> A B -> bar B -> bar A D -> bar foo D -> bar foo A A
+                    -> bar foo bar foo
+ bar foo bar bar    C -> A B -> bar B -> bar A D -> bar foo D -> bar foo A A
+                    -> bar foo bar bar
+ bar bar foo foo    C -> A B -> bar B -> bar A D -> bar bar D -> bar bar A A
+                    -> bar bar foo foo
+ bar bar bar foo    C -> A B -> bar B -> bar A D -> bar bar D -> bar bar A A
+                    -> bar bar bar foo
+ bar bar bar bar    C -> A B -> bar B -> bar A D -> bar bar D -> bar bar A A
+                    -> bar bar bar bar
+4. [@4] <<regex>> For the terminals in question [[prod-rules]], write the
+   minimum number of Python regular expressions to distinguish among them,
+   using conditionals, and ordering the regexs into a tree until all
+   terminals are recognized without ambiguities.  Carry your tree out until
+   each terminal has a regular expression that places it in the leaves.
+   Include a sketch of your tree if you think it will help!
+
+We can construct our tree as follows, with indentation showing node
+relationship:
+Start
++ r"b[a-z]*"
+  + r"bu[a-z]*"
+    + r"bushes"
+      + Leaf 1 = bushes
+      + Leaf 2 = burrow
+    + r"back"
+      + Leaf 3 = back
+      + Leaf 4 = black
+  + r"[a-z]*g[a-z]*"
+    + r"[a-z]*ing"
+      + r"racing"
+	+ Leaf 5 = racing
+	+ Leaf 6 = hunting
+      + r"dog"
+	+ Leaf 7 = dog
+	+ Leaf 8 = ground hog
+    + r"*ee"
+      + r"wee"
+	+ Leaf 9 = wee
+	+ Leaf 10 = tree
+      + r"[a-z]*wa[a-z]*"
+	+ r"wee"
+	  + Leaf 11 = was
+	  + Leaf 12 = towards
+        + Leaf 13 = squirrel
+
+A tree constructed like this has a height of 5, so the maximum number of
+regular expressions needed to be match is 5.
+
+5. [@5] <<regex-imp>> Now implement your regular expression tree in
+   question [[regex]] and show the code and results.
+
+#+begin_src python :results output
+import re
+
+def tree(str):
+    if re.match(r"^b[a-z]*", str):
+        if re.match(r"^bu[a-z]*", str):
+            if re.match(r"bushes", str):
+                print(f'Leaf 1 = {str}')
+            else:
+                print(f'Leaf 2 = {str}')
+        else:
+            if re.match(r"back", str):
+                print(f'Leaf 3 = {str}')
+            else:
+                print(f'Leaf 4 = {str}')
+    else:
+        if re.match(r"[a-z]*g[a-z]*", str):
+            if re.match(r"[a-z]*ing", str):
+                if re.match(r"racing", str):
+                    print(f'Leaf 5 = {str}')
+                else:
+                    print(f'Leaf 6 = {str}')
+            else:
+                if re.match(r"dog", str):
+                    print(f'Leaf 7 = {str}')
+                else:
+                    print(f'Leaf 8 = {str}')
+        else:
+            if re.match(r"[a-z]*ee", str):
+                    if re.match(r"wee", str):
+                        print(f'Leaf 9 = {str}')
+                    else:
+                        print(f'Leaf 10 = {str}')
+            else:
+                if re.match(r"[a-z]*wa[a-z]*", str):
+                    if re.match(r"was", str):
+                        print(f'Leaf 11 = {str}')
+                    else:
+                        print(f'Leaf 12 = {str}')
+                else:
+                    print(f'Leaf 13 = {str}')
+
+words = ["dog", "black", "racing", "was", "squirrel", "tree", "burrow", "ground hog", "bushes", "towards", "hunting", "back", "wee"]
+for word in words:
+    tree(word)
+#+end_src
+
+#+results:
+#+begin_example
+Leaf 7 = dog
+Leaf 4 = black
+Leaf 5 = racing
+Leaf 11 = was
+Leaf 13 = squirrel
+Leaf 10 = tree
+Leaf 2 = burrow
+Leaf 8 = ground hog
+Leaf 1 = bushes
+Leaf 12 = towards
+Leaf 6 = hunting
+Leaf 3 = back
+Leaf 9 = wee
+#+end_example
+
+
+6.  [@6] <<first-gram>> Write a grammar that captures the following sentences:
+#
+   + sentence 1 :: ``The cheerful black dog slept quietly by the chair.''
+   + sentence 2 :: ``A sleepy yellow dog stretched his back.''
+   + sentence 3 :: ``Somebody downstairs made the coffee.''
+#
+Put the phrases generated by each rule from these sentences alongside the
+rules, again as an =org= table (this example is *JUST to illustrate format,
+it is not correct!*):
+#
+| rule                                            | phrase                                                                          |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| S  $\rightarrow$ NP VP NP                       | ( foo bar barbar )                                                              |
+     $\rightarrow$ NP VP PP NP
+  NP $\rightarrow$ DT NP
+     $\rightarrow$ JJ NP
+     $\rightarrow$ N NP
+     $\rightarrow$ N
+  VP $\rightarrow$ VB RB
+     $\rightarrow$ VB
+  PP $\rightarrow$ P DT
+  DT $\rightarrow$ a | the | the
+  JJ $\rightarrow$ sleepy | yellow | black |
+                   cheerful
+  N  $\rightarrow$ dog | somebody | coffee  |
+                   back | chair | downstairs|
+		   his
+  VB $\rightarrow$ stretched | slept | made
+  RB $\rightarrow$ quietly
+  P  $\rightarrow$ by
+
+
+7. [@7] <<recur-desc-parser>> Now implement the grammar of question
+   [[first-gram]] as a recursive descent parser.  Parse each sentence,
+   showing the results, and compare them.  What do you observe?
+#+begin_src python :results output
+from nltk import CFG, RecursiveDescentParser
+
+grammar = CFG.fromstring("""
+   S -> NP VP NP
+   NP -> DT NP
+   NP -> PP NP
+   NP -> JJ NP
+   NP -> N NP
+   NP -> N
+   VP -> VB RB
+   VP -> VB
+   PP -> P DT
+   DT -> 'a'
+   DT -> 'the'
+   JJ -> 'sleepy'
+   JJ -> 'yellow'
+   JJ -> 'black'
+   JJ -> 'cheerful'  
+   N -> 'dog'
+   N -> 'somebody'
+   N -> 'coffee'
+   N -> 'back'
+   N -> 'chair'
+   N -> 'downstairs'
+   N -> 'his'
+   VB -> 'stretched'
+   VB -> 'slept'
+   VB -> 'made'
+   RB -> 'quietly'
+   P -> 'by'
+""")
+
+rd = RecursiveDescentParser(grammar)
+
+sents = ["The cheerful black dog slept quietly by the chair", 
+         "A sleepy yellow dog stretched his back",
+         "Somebody downstairs made the coffee"]
+
+for sent in sents:
+    tokens = sent.lower().split(" ")
+    for t in rd.parse(tokens):
+        print(t)
+#+end_src
+
+#+results:
+#+begin_example
+(S
+  (NP (DT the) (NP (JJ cheerful) (NP (JJ black) (NP (N dog)))))
+  (VP (VB slept) (RB quietly))
+  (NP (PP (P by) (DT the)) (NP (N chair))))
+(S
+  (NP (DT a) (NP (JJ sleepy) (NP (JJ yellow) (NP (N dog)))))
+  (VP (VB stretched))
+  (NP (N his) (NP (N back))))
+(S
+  (NP (N somebody) (NP (N downstairs)))
+  (VP (VB made))
+  (NP (DT the) (NP (N coffee))))
+#+end_example
+
+8. <<chart-parser>> Following on, implement the grammar of question
+   [[first-gram]] as a chart parser.  Parse each sentence, showing the results,
+   and compare these chart parsing results to your results in question
+   [[recur-desc-parser]].  What do you observe?
+#+begin_src python :results output
+from nltk import CFG, ChartParser
+
+grammar = CFG.fromstring("""
+   S -> NP VP NP
+   NP -> DT NP
+   NP -> PP NP
+   NP -> JJ NP
+   NP -> N NP
+   NP -> N
+   VP -> VB RB
+   VP -> VB
+   PP -> P DT
+   DT -> 'a'
+   DT -> 'the'
+   JJ -> 'sleepy'
+   JJ -> 'yellow'
+   JJ -> 'black'
+   JJ -> 'cheerful'  
+   N -> 'dog'
+   N -> 'somebody'
+   N -> 'coffee'
+   N -> 'back'
+   N -> 'chair'
+   N -> 'downstairs'
+   N -> 'his'
+   VB -> 'stretched'
+   VB -> 'slept'
+   VB -> 'made'
+   RB -> 'quietly'
+   P -> 'by'
+""")
+
+cp = ChartParser(grammar)
+
+sents = ["The cheerful black dog slept quietly by the chair", 
+         "A sleepy yellow dog stretched his back",
+         "Somebody downstairs made the coffee"]
+
+for sent in sents:
+    tokens = sent.lower().split(" ")
+    for t in cp.parse(tokens):
+        print(t)
+
+#+end_src
+
+#+results:
+#+begin_example
+(S
+  (NP (DT the) (NP (JJ cheerful) (NP (JJ black) (NP (N dog)))))
+  (VP (VB slept) (RB quietly))
+  (NP (PP (P by) (DT the)) (NP (N chair))))
+(S
+  (NP (DT a) (NP (JJ sleepy) (NP (JJ yellow) (NP (N dog)))))
+  (VP (VB stretched))
+  (NP (N his) (NP (N back))))
+(S
+  (NP (N somebody) (NP (N downstairs)))
+  (VP (VB made))
+  (NP (DT the) (NP (N coffee))))
+#+end_example
+
+9. <<clock>> Extend your grammar for the sentences in question
+   [[recur-desc-parser]]  so that it can parse sentences 4--6 below.  Time the
+   implementation's performance for each sentence, doing this 1000 times
+   for each sentence for better estimates, and put the results  in an =org= table.
+   + sentence 4 :: ``We had a long walk to the park and Vinny played with
+     three other dogs.''
+   + sentence 5 :: ``It was sunny today but might not be tomorrow.''
+   + sentence 6 :: ``There are 49 angels dancing on the head of this pin.''
+
+#+begin_src python :results output
+from nltk import CFG, RecursiveDescentParser
+
+grammar = CFG.fromstring("""
+   S -> IC CC CL
+   S -> IC VP
+   S -> IC
+   CL -> IC
+   CL -> DC
+   IC -> NP VP
+   IC -> RB VB NP
+   DC -> VP
+   NP -> DT NP
+   NP -> PP NP
+   NP -> JJ NP
+   NP -> N NP
+   NP -> N
+   VP -> MV VB NP
+   VP -> MV VB RB NP
+   VP -> MV RB VB NP
+   VP -> VB
+   PP -> P
+   DT -> 'a'
+   DT -> 'the'
+   JJ -> 'sleepy'
+   JJ -> 'yellow'
+   JJ -> 'black'
+   JJ -> 'cheerful'
+   JJ -> 'long'
+   JJ -> 'three'
+   JJ -> 'other'
+   JJ -> 'sunny'
+   JJ -> '49'
+   JJ -> 'this'
+   N -> 'dog'
+   N -> 'somebody'
+   N -> 'coffee'
+   N -> 'back'
+   N -> 'chair'
+   N -> 'downstairs'
+   N -> 'his'
+   N -> 'we'
+   N -> 'walk'
+   N -> 'park'
+   N -> 'vinny'
+   N -> 'dogs'
+   N -> 'it'
+   N -> 'today'
+   N -> 'tomorrow'
+   N -> 'angels'
+   N -> 'head'
+   N -> 'pin'
+   VB -> 'had'
+   VB -> 'stretched'
+   VB -> 'slept'
+   VB -> 'made'
+   VB -> 'played'
+   VB -> 'was'
+   VB -> 'be'
+   VB -> 'are'
+   VB -> 'dancing'
+   RB -> 'quietly'
+   RB -> 'not'
+   RB -> 'there'
+   P -> 'by'
+   P -> 'to'
+   P -> 'with'
+   P -> 'on'
+   P -> 'of'
+   CC -> 'and'
+   CC -> 'but'
+   MV -> 'might'
+   MV -> 
+""")
+
+rd = RecursiveDescentParser(grammar)
+
+sents = ["The cheerful black dog slept quietly by the chair", 
+         "A sleepy yellow dog stretched his back",
+         "Somebody downstairs made the coffee",
+         "We had a long walk to the park and Vinny played with three other dogs",
+         "It was sunny today but might not be tomorrow",
+         "There are 49 angels dancing on the head of this pin"]
+
+for sent in sents:
+    tokens = sent.lower().split(" ")
+    print(tokens)
+    for t in rd.parse(tokens):
+        print(t)
+#+end_src
+
+#+results:
+#+begin_example
+['the', 'cheerful', 'black', 'dog', 'slept', 'quietly', 'by', 'the', 'chair']
+(S
+  (IC
+    (NP (DT the) (NP (JJ cheerful) (NP (JJ black) (NP (N dog)))))
+    (VP
+      (MV )
+      (VB slept)
+      (RB quietly)
+      (NP (PP (P by)) (NP (DT the) (NP (N chair)))))))
+['a', 'sleepy', 'yellow', 'dog', 'stretched', 'his', 'back']
+(S
+  (IC
+    (NP (DT a) (NP (JJ sleepy) (NP (JJ yellow) (NP (N dog)))))
+    (VP (MV ) (VB stretched) (NP (N his) (NP (N back))))))
+['somebody', 'downstairs', 'made', 'the', 'coffee']
+(S
+  (IC
+    (NP (N somebody) (NP (N downstairs)))
+    (VP (MV ) (VB made) (NP (DT the) (NP (N coffee))))))
+['we', 'had', 'a', 'long', 'walk', 'to', 'the', 'park', 'and', 'vinny', 'played', 'with', 'three', 'other', 'dogs']
+(S
+  (IC
+    (NP (N we))
+    (VP
+      (MV )
+      (VB had)
+      (NP
+        (DT a)
+        (NP
+          (JJ long)
+          (NP (N walk) (NP (PP (P to)) (NP (DT the) (NP (N park)))))))))
+  (CC and)
+  (CL
+    (IC
+      (NP (N vinny))
+      (VP
+        (MV )
+        (VB played)
+        (NP
+          (PP (P with))
+          (NP (JJ three) (NP (JJ other) (NP (N dogs)))))))))
+['it', 'was', 'sunny', 'today', 'but', 'might', 'not', 'be', 'tomorrow']
+(S
+  (IC (NP (N it)) (VP (MV ) (VB was) (NP (JJ sunny) (NP (N today)))))
+  (CC but)
+  (CL (DC (VP (MV might) (RB not) (VB be) (NP (N tomorrow))))))
+['there', 'are', '49', 'angels', 'dancing', 'on', 'the', 'head', 'of', 'this', 'pin']
+(S
+  (IC (RB there) (VB are) (NP (JJ 49) (NP (N angels))))
+  (VP
+    (MV )
+    (VB dancing)
+    (NP
+      (PP (P on))
+      (NP
+        (DT the)
+        (NP (N head) (NP (PP (P of)) (NP (JJ this) (NP (N pin)))))))))
+#+end_example
+
+10. <<avm-graph>> Consider this attribute-value matrix:
+#
+#+begin_export latex
+\begin{center}
+\avm{
+[ CAT  & s \\
+  HEAD & [ AGR   & \1 [ NUM & sg \\
+                        PER & 3 ] \\
+           SUBJ  & [ AGR \1 ] ] ] \\
+}.
+\end{center}
+#+end_export
+#
+Draw the corresponding directed acyclic graph, ideally in Python.  (A hand-drawn figure is fine:
+just photograph it and include the image below, as is done in [[file:../notes.org][notes.org]].)
+
+To visualize this, we used the following python code, and generated an
+image using graphviz.
+#+begin_src python
+import graphviz
+
+dot = graphviz.Digraph(comment='Attribute Value Matrix', format='png')
+dot.node('A')
+dot.node('C')
+dot.node('D')
+dot.node('E')
+dot.node('F')
+dot.node('G')
+dot.node('H')
+
+dot.edge('A', 'B', 'CAT')
+dot.edge('A', 'C', 'HEAD')
+dot.edge('C', 'D', 'AGR')
+dot.edge('C', 'E', 'SUBJ')
+dot.edge('D', 'F', 'NUM')
+dot.edge('D', 'G', 'PER')
+dot.edge('E', 'H', 'AGR')
+
+dot.view()
+#+end_src
+
+It does not output directly in org mode, but here is the image that was
+generated: [[file:./q11.png]]
+
+11. [@11] <<basic-fea-struc>> Now extend your grammar from question [[clock]] to include features
+    relevant to subject-verb agreement, using =nltk.FeatStruct()= from
+    chapter nine, so that you can parse sentences 1--9.  Using
+    =cp.parse()=, print and study the parse trees for each sentence.  Do
+    you agree with them?  Why or why not?
+
+   + sentence 7 :: ``The black dogs are playing with the elf toy.''
+   + sentence 8 :: ``The yellow dog slept in my pajamas.''
+   + sentence 9 :: ``We will take two long rides in the country next week.''
+
+12. [@12] <<fopc>> [[../../reading/blk_2nd_ed.pdf][Chapter 10 of BLK]] and [[http://www.nltk.org/howto/semantics.html][the semantics howto]] march one through the basics
+   of applying the FOPC and the \lambda calculus to reifying the semantics of
+   context-free sentences.  One of the practical difficulties in this
+   approach is ensuring that the implementation of the universe of
+   discourse (they call it the /domain of discourse/, same thing) actually
+   covers the intended universe.
+
+   To see this, let's use their =sem2.fcfg= grammar to parse the following
+   sentences syntactically and semantically, and output the reification of
+   the sentences into the FOPC and the \lambda calculus.  
+
+   (HINT: be sure to 
+   #+begin_src python :results output
+   from nltk.sem import *
+   #+end_src
+   so you get all the parts and save yourself frustration!)  
+
+   For each of the following sentences, parse them and print the sentence,
+   its parse, and its semantics; and then explain the results you get and
+   exactly how you would fix the problems encountered.
+
+      + Suzie sees Noosa.
+      + Fido barks.
+      + Tess barks.
+#+begin_src python :results output
+from nltk.sem import *
+sent1 = ["Suzie sees Noosa"]
+print()
+print(sent1[0])
+results = util.interpret_sents(sent1, 'grammars/sample_grammars/sem2.fcfg')
+for result in results:
+  for (synrep, semrep) in result:
+    print(semrep)
+    print(synrep)
+sent2 = ["Fido barks"]
+print()
+print(sent2[0])
+results = util.interpret_sents(sent2, 'grammars/sample_grammars/sem2.fcfg')
+for result in results:
+  for (synrep, semrep) in result:
+    print(semrep)
+    print(synrep)
+sent3 = ["Tess barks"]
+print()
+print(sent3[0])
+results = util.interpret_sents(sent3, 'grammars/sample_grammars/sem2.fcfg')
+for result in results:
+  for (synrep, semrep) in result:
+    print(semrep)
+    print(synrep)
+#+end_src
+
+#+results:
+#+begin_example
+
+Suzie sees Noosa
+see(suzie,noosa)
+(S[SEM=<see(suzie,noosa)>]
+  (NP[-LOC, NUM='sg', SEM=<\P.P(suzie)>]
+    (PropN[-LOC, NUM='sg', SEM=<\P.P(suzie)>] Suzie))
+  (VP[NUM='sg', SEM=<\y.see(y,noosa)>]
+    (TV[NUM='sg', SEM=<\X y.X(\x.see(y,x))>, TNS='pres'] sees)
+    (NP[+LOC, NUM='sg', SEM=<\P.P(noosa)>]
+      (PropN[+LOC, NUM='sg', SEM=<\P.P(noosa)>] Noosa))))
+
+Fido barks
+bark(fido)
+(S[SEM=<bark(fido)>]
+  (NP[-LOC, NUM='sg', SEM=<\P.P(fido)>]
+    (PropN[-LOC, NUM='sg', SEM=<\P.P(fido)>] Fido))
+  (VP[NUM='sg', SEM=<\x.bark(x)>]
+    (IV[NUM='sg', SEM=<\x.bark(x)>, TNS='pres'] barks)))
+
+Tess barks
+#+end_example
+
+* Grading Scale
+
+This homework is worth 15 points.  The grading
+scale is:
+
+| fraction correctly reviewed and answered | points awarded |
+|------------------------------------------+----------------|
+| \(\ge 0.95\)                             |             15 |
+| 0.90 -- 0.94                             |             14 |
+| 0.85 -- 0.89                             |             13 |
+| 0.80 -- 0.94                             |             12 |
+| 0.75 -- 0.79                             |             11 |
+| 0.70 -- 0.74                             |             10 |
+| 0.65 -- 0.69                             |              9 |
+| 0.60 -- 0.64                             |              8 |
+| 0.55 -- 0.59                             |              7 |
+| 0.50 -- 0.54                             |              6 |
+| 0.45 -- 0.49                             |              5 |
+| 0.40 -- 0.44                             |              4 |
+| 0.35 -- 0.39                             |              3 |
+| 0.30 -- 0.34                             |              2 |
+| 0.25 -- 0.29                             |              1 |
+| \(< 0.25\)                               |              0 |
+
+
+
+
+* Scoring
+
+
+|     question | max pts | answer ok? |
+|--------------+---------+------------|
+|            1 |       1 |            |
+|            2 |       1 |            |
+|            3 |       1 |            |
+|            4 |       1 |            |
+|            5 |       1 |            |
+|            6 |       2 |            |
+|            7 |       1 |            |
+|            8 |       1 |            |
+|            9 |       1 |            |
+|           10 |       1 |            |
+|           11 |       2 |            |
+|           12 |       2 |            |
+|--------------+---------+------------|
+|  total score |      15 |          0 |
+|   percentage |         |          0 |
+| total points |         |            |
+#+TBLFM: @14$2=vsum(@I..@II)::@14$3=vsum(@I..@II)::@15$3=@-1/@-2$-1
+
+
+
