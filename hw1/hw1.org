@@ -61,8 +61,8 @@ linguistic and computational approaches to these units.
 | first name last name | color                         |
 |----------------------+-------------------------------|
 | Eric                 | green \color{green}\rule{5mm}{3mm} |
-| Levi                 | yellow \color{yellow}\rule{5mm}{3mm} |
-| Mridgala             | purple \color{violet}\rule{5mm}{3mm} |
+|                      | yellow \color{yellow}\rule{5mm}{3mm} |
+|                      | purple \color{violet}\rule{5mm}{3mm} |
 
 
 
@@ -311,8 +311,8 @@ prefixes = ['anti','auto','de','dis','down','extra','hyper','il','im','in','ir',
 | first name | color                                | GitHub handle |
 |------------+--------------------------------------+---------------|
 | Eric       | green \color{green}\rule{5mm}{3mm}   | willarderic   |
-| Mrigdala   | yellow \color{yellow}\rule{5mm}{3mm} | Mrigdala22    |
-| Levi       | purple \color{violet}\rule{5mm}{3mm} | Winston104    |
+|            | yellow \color{yellow}\rule{5mm}{3mm} |               |
+|            | purple \color{violet}\rule{5mm}{3mm} |               |
 
 For each person in your team, please list in order of decreasing preference
 your top three choices for corpora.  Be careful to choose a corpus, not a
@@ -325,8 +325,8 @@ resolve any conflicts!
 | first name | first choice | second choice | third choice |
 |------------+--------------+---------------+--------------|
 | Eric       | brown        | gutenberg     | abc          |
-| Mrigdala   |              |               |              |
-| Levi       |              |               |              |
+|            |              |               |              |
+|            |              |               |              |
 
 
 
@@ -345,14 +345,14 @@ in English: stick those in an example block too.
 
 
 2. [@2] How do you start emacs from the command line?
-Type 'emacs' in the command line to start an emacs process.
+
 3. How do you open a file?
-The command sequence C+x C+f lets you input the path to a file to open.
+
 4. How do you edit it?
 Put the cursor where you want to make a change and insert and/or delete
 characters from there.
 5. How do you save it?
-The command sequence C+x C+s saves a file.
+
 6. How do you get help without googling?
 
 7. How do you get out of trouble?
@@ -360,33 +360,31 @@ C+g is a command to cancel your current command, which would get you out of trou
 # second clause added <2021-10-12 Tue>
 #
 8.  How do you split the window in half horizontally, so that one half is above the other?
-The command C+x 2 will split the window in half horizontally.
+
 # second clause added <2021-10-12 Tue>
 #
 9.  How do you split the window in half vertically, so that the halves are side by side?
-The command C+x 3 will split the window in half vertically.
+
 10.  How long can you repeat the operations in questions 8 and 9?
 You can repeat the operations from 8 or 9 four times from the starting
 section, but I was able to get 8 total vertical "halves" by splitting the
 other "halves". You can continue until a pane is too small to be split anymore.
 11.  What is a buffer?
-Buffers are objects with distinct names that hold text that can be editted.
+
 12.  How do you get a list of all the buffers running in your emacs
      process?
-To get a list of all the buffers running, one can use the command sequence
-C+x C+b.
 13.  How do you jump to the top of the file without scrolling?
 The command M+< allows you to jump to the top of the file without scrolling.
 14.  How do you jump to the bottom of the file without scrolling?
-The command M+> lets you jump to the bottom of the file without scrolling.
+
 15.  How do you move down a page without scrolling?
-The command C+v moves down a page without scrolling.
+
 16.  How do you move up a page without scrolling?
 To move up a page without scrolling, use the command M+v
 17.  How do you move to the end of a line?
-The command C+e moves you to the beginning of the line.
+
 18.  How do you move to the beginning of a line?
-The command C+a moves you to the end of a line.
+
 19.  What is the point?
 The point is the current location of the cursor.
 20.  What is the mark?
@@ -396,6 +394,7 @@ The point is the current location of the cursor.
 
 22.  How do you exit emacs?
 The sequence of commands to exit is C+x C+c
+
 Answer the remaining questions with a corpus of your choice  from the NLTK book.
 
 
@@ -414,6 +413,8 @@ print(len(set(brown.words())))
 
 #+results:
 : 56057
+There are 56057 unique tokens in the entire corpus.
+
 
 26.  Print out the first 1000 tokens in your corpus.
 
@@ -427,7 +428,7 @@ print(len(set(brown.words()[:1000])))
 
 #+results:
 : 438
-
+There are 438 unique tokens in the first 1000 tokens.
 
 
 
@@ -456,6 +457,7 @@ print(count)
 
 #+results:
 : 3476
+I counted 3476 bigrams containing the modal \w{can}.
 
 # revised to insist on a prefix
 # <<pref-regex>>
@@ -463,37 +465,72 @@ print(count)
     that identifies *all* words in your corpus containing that prefix
     (remember that a prefix begins the word).  What's the length of that
     group of words?
+#+begin_src python :results output
+from nltk.corpus import brown
+import re
+
+# I chose the prefix 'mega'
+prefix_words = [s for s in brown.words() if re.search(r'^mega[a-zA-Z\-]', s)]
+print(len(prefix_words))
+print(len(set(prefix_words)))
+#+end_src
+
+#+results:
+: 17
+: 6
+There are 17 words in the brown corpus that have the prefix
+"mega". Counting only unique words, there are 6 in total.
 
 # revised to specify what to show
 # pref-regex
 33.  <<sort-set>> Sort the set of problem [[pref-regex]] in alphabetical order (show your code and
     results) and study it.  Do you see multiple forms of the same headword?
     Show some examples.
+#+begin_src python :results output
+from nltk.corpus import brown
+import re
+
+# I chose the prefix "mega"
+prefix_words = [s for s in brown.words() if re.search(r'^mega[a-zA-Z\-]', s)]
+
+print(sorted(set(prefix_words)))
+#+end_src
+
+#+results:
+: ['megakaryocytic', 'megalomania', 'megalopolises', 'megaton', 'megatons', 'megawatt']
+The only repeated headwords I see are 'megaton' and the plural of it, 'megatons'.
 
 # revised to specify what to show, changed back-pointer
 # fixed back-pointer again
 # pref-regex
 34.  Now use the Porter stemmer on the set from problem [[sort-set]] (again, show
     your code and results).  What do you notice?
-This problem relies on a problem my team members were responsible for, and
-they did not complete nor ask for help until right before the homework deadline.
+#+begin_src python :results output
+from nltk.stem.porter import *
+mega_prefixes = ['megakaryocytic', 'megalomania', 'megalopolises', 'megaton', 'megatons', 'megawatt']
+stemmer = PorterStemmer()
+stemmed_words = [stemmer.stem(w) for w in mega_prefixes]
+print(stemmed_words)
+print(len(set(stemmed_words)))
+#+end_src
+
+#+results:
+: ['megakaryocyt', 'megalomania', 'megalopolis', 'megaton', 'megaton', 'megawatt']
+: 5
+The PorterStemmer removed the plurality of the word 'megatons' to produce
+'megaton'. After this stemming, there are only 5 unique headwords that
+start with the prefix 'mega'. 
 
 
 ** 8 Tags, Tagsets, and Tagging
+SCHEDULED: <2023-09-26 Tue>
 
 35.  [@35] Ask NLTK what tags the Penn Treebank tagset uses for nouns and verbs
     (and show the result).
 
 #  <<ran-sent>> 
 
-#+begin_src python :results output
-  from nltk.corpus import brown
-  import random
-  sents = brown.sents()
-  num_sents = len(brown.sents())
-  random_sentence_index = random.randint(0, num_sents)
-  print(random_sentence_index)
-#+end_src
+
 
 #+results:
 : 19701
@@ -501,6 +538,20 @@ they did not complete nor ask for help until right before the homework deadline.
 36. <<ran-sent>> Import the corpus and count the number of sentences in it, discarding
     any uninteresting front matter such as titles and chapter headings.
     Then show a random sentence.
+#+begin_src python :results output
+from nltk.corpus import brown
+import random
+sents = brown.sents()
+num_sents = len(brown.sents())
+#random_sentence_index = random.randint(0, num_sents)
+# The random number I received from the above call was 19701, I will save the index for future problems.
+random_sentence_index = 19701
+print(sents[random_sentence_index])
+#+end_src
+
+#+results:
+: ['By', 'counting', 'the', 'number', 'of', 'stalls', 'and', 'urinals', 'I', 'attempted', 'to', 'form', 'a', 'loose', 'estimate', 'of', 'how', 'many', 'men', 'the', 'hall', 'would', 'hold', 'at', 'one', 'time', '.']
+
 
 37.  Tag each token in your random sentence as 'VB'.
 
@@ -527,11 +578,29 @@ silly = ['FOO','BAR','EGO','NEED','ADS','DUCK','MANSE'
 #+end_src
 #  [[ran-sent]]
 
+
 39. [@39]  <<bo-tagger>> Construct a lookup tagger trained on the 1000 most frequent words in
     the Brown news category that backs off to a default tag of 'UNK'.  Use
     that to tag the original random sentence you got in question [[ran-sent]].  Print
     the result as the list of tuples in sentence order.  What do you
     observe?
+#+begin_src python :results output
+import nltk
+from nltk.corpus import brown
+freq_dist = nltk.FreqDist(brown.words(categories='news'))
+cond_freq_dist = nltk.ConditionalFreqDist(brown.tagged_words(categories='news'))
+most_freq_words = freq_dist.most_common(1000)
+freq_tags = dict((word, cond_freq_dist[word].max()) for (word, _) in most_freq_words)
+botagger = nltk.UnigramTagger(model=freq_tags, backoff=nltk.DefaultTagger('UNK'))
+sents = brown.sents()
+print(botagger.tag(sents[19701]))
+#+end_src
+
+#+results:
+: [('With', 'IN'), ('few', 'AP'), ('exceptions', 'UNK'), (',', ','), ('the', 'AT'), ('major', 'JJ'), ('denominations', 'UNK'), ('are', 'BER'), ('rapidly', 'UNK'), ('losing', 'UNK'), ('their', 'PP$'), ('hold', 'UNK'), ('on', 'IN'), ('the', 'AT'), ('central', 'JJ'), ('city', 'NN'), ('.', '.')]
+The bo-tagger seems to be able to tag at least half of the sentence. The more common words are definitely the ones getting tagged, whereas
+more uncommon words such as 'denominations' are being tagged 'UNK'.
+
 
 #  ran-sent and bo-tagger
 40. [@40] For your random sentence found in question [[ran-sent]] tagged with
@@ -541,8 +610,13 @@ silly = ['FOO','BAR','EGO','NEED','ADS','DUCK','MANSE'
     text, /e.g./:
 #+BEGIN_EXAMPLE
 tagged sentence
-rule i:   context:  X -> Y
+rule 1: If the preceding word is 'few':  UNK -> NN
+rule 2: If the preceding word is 'JJ' (an adjective): UNK -> NN
+rule 3: If the word i-1 is 'are' and word i+1 is 'VB', 'RB', or 'UNK': UNK -> RB
 #+END_EXAMPLE
+
+
+
 This problem relies on a problem my team members were responsible for, and
 they did not complete nor ask for help until right before the homework deadline.
 # <<to-gram>>
