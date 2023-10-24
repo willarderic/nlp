@@ -730,56 +730,54 @@ generated: [[file:./q11.png]]
       + Fido barks.
       + Tess barks.
 #+begin_src python :results output
+import nltk.data
 from nltk.sem import *
-sent1 = ["Suzie sees Noosa"]
-print()
-print(sent1[0])
-results = util.interpret_sents(sent1, 'grammars/sample_grammars/sem2.fcfg')
-for result in results:
-  for (synrep, semrep) in result:
-    print(semrep)
-    print(synrep)
-sent2 = ["Fido barks"]
-print()
-print(sent2[0])
-results = util.interpret_sents(sent2, 'grammars/sample_grammars/sem2.fcfg')
-for result in results:
-  for (synrep, semrep) in result:
-    print(semrep)
-    print(synrep)
-sent3 = ["Tess barks"]
-print()
-print(sent3[0])
-results = util.interpret_sents(sent3, 'grammars/sample_grammars/sem2.fcfg')
-for result in results:
-  for (synrep, semrep) in result:
-    print(semrep)
-    print(synrep)
+sents = ["Suzie sees Noosa", "Fido barks"]
+grammar_file = 'grammars/sample_grammars/sem2.fcfg'
+parse = parse_sents(sents, grammar_file)
+for sent, trees in zip(sents, parse):
+  print()
+  print(f"Sentence: {sent}")
+  for tree in trees:
+    print(f"Parse:\n {tree}")
+    print(f"Semantics: {root_semrep(tree)}")
 #+end_src
 
 #+results:
 #+begin_example
 
-Suzie sees Noosa
-see(suzie,noosa)
-(S[SEM=<see(suzie,noosa)>]
+Sentence: Suzie sees Noosa
+Parse:
+ (S[SEM=<see(suzie,noosa)>]
   (NP[-LOC, NUM='sg', SEM=<\P.P(suzie)>]
     (PropN[-LOC, NUM='sg', SEM=<\P.P(suzie)>] Suzie))
   (VP[NUM='sg', SEM=<\y.see(y,noosa)>]
     (TV[NUM='sg', SEM=<\X y.X(\x.see(y,x))>, TNS='pres'] sees)
     (NP[+LOC, NUM='sg', SEM=<\P.P(noosa)>]
       (PropN[+LOC, NUM='sg', SEM=<\P.P(noosa)>] Noosa))))
+Semantics: see(suzie,noosa)
 
-Fido barks
-bark(fido)
-(S[SEM=<bark(fido)>]
+Sentence: Fido barks
+Parse:
+ (S[SEM=<bark(fido)>]
   (NP[-LOC, NUM='sg', SEM=<\P.P(fido)>]
     (PropN[-LOC, NUM='sg', SEM=<\P.P(fido)>] Fido))
   (VP[NUM='sg', SEM=<\x.bark(x)>]
     (IV[NUM='sg', SEM=<\x.bark(x)>, TNS='pres'] barks)))
-
-Tess barks
+Semantics: bark(fido)
 #+end_example
+
+In the first sentence "Suzie sees Noosa" we have a binary predicate "sees"
+that takes inputs of Suzie and Noosa, so we get the semantics "see(suzie,
+noosa)".
+
+In the second sentence, we have a unary predicate "barks" with Fido as the
+input, hence "bark(fido)"
+
+The third sentence fails to parse because "Tess" is not in the domain and
+thus is not recognized as a non-logical constant, which is why we do not
+receive a parse. To fix this, we must simply add "Tess" into the domain of discourse.
+
 
 * Grading Scale
 
