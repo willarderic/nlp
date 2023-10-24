@@ -1,0 +1,2726 @@
+#+title: Homework 2: Formal Languages, Parsing, and Semantics
+#+author: Toni Kazic
+#+date: Fall, 2023
+
+
+# revised <2021-09-25 Sat>
+
+#+SETUPFILE: "../../common/preamble.org"
+#+LATEX_CLASS: article
+#+OPTIONS: toc:nil
+#+OPTIONS: ^:nil
+
+#+LATEX_HEADER: \usepackage{langsci-avm}
+# http://ftp.math.purdue.edu/mirrors/ctan.org/macros/latex/contrib/langsci-avm/langsci-avm.pdf
+# and see also
+# https://userblogs.fu-berlin.de/langsci-press/2020/04/20/writing-avms-easily-in-latex-the-new-langsci-avm-package/
+
+
+#+LATEX_HEADER: \newcommand{\grmr}[2]{\ensuremath{\mathrm{#1} & \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\txtgrmr}[2]{\ensuremath{\mathrm{#1} \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\grmrhs}[1]{\ensuremath{& \,\longrightarrow\, \mathrm{#1} }}
+#+LATEX_HEADER: \newcommand{\wa}[1]{\type{\textnormal{\w{#1}}}}
+
+# compile with pdflatex
+#
+# Kazic, 3.11.2020
+
+
+
+* Introduction
+
+In this homework, the syntactic and semantic rubber hits the road.  This
+homework introduces the deeper structures of language, especially when
+phrased formally; looks at syntax and parsing; and extends the notion of
+parsing to semantics.
+
+
+
+* Who's Who and Solution Patterns
+<<whoswho>>
+
+
+
+** Group Members
+
+| first name last name | color                         |
+|----------------------+-------------------------------|
+| Eric                 | green \color{green}\rule{5mm}{3mm} |
+| Mridgala             | yellow \color{yellow}\rule{5mm}{3mm} |
+| Santhosh             | purple \color{violet}\rule{5mm}{3mm} |
+
+
+
+
+** Two Member Solution Patterns
+
+| color                         | draft solution | revise solution |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | odds           | evens           |
+| yellow \color{yellow}\rule{5mm}{3mm} | evens          | odds            |
+
+
+** Three Member Solution Patterns
+
+$i$ is the question number.
+
+#+begin_center
+#+ATTR_LaTeX: :mode inline-math :environment array
+| \text{color}                  | \text{draft solution} | \text{revise solution} |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | i \mod 3 = 1   | i \mod 3 = 0    |
+| yellow \color{yellow}\rule{5mm}{3mm} | i \mod 3 = 2   | i \mod 3 = 1    |
+| purple \color{violet}\rule{5mm}{3mm} | i \mod 3 = 0   | i \mod 3 = 2    |
+#+end_center
+
+
+* General Instructions
+
+
+   + /Fill out the group members table and follow the solution patterns/ in
+     Section [[whoswho]].
+
+   + /If the question is unclear, tell me your interpretation of it as part
+     of your answer./  Feel free to ask about the questions in class or on
+     the Slack channel (use =@channel= as others will probably be puzzled
+     too). 
+
+   + /For questions using corpora, use the corpus of the lead person./
+
+   + /Put your draft answers right after each question using a *complete,
+     functional* =org= mode code or example block./ Make sure your code
+     block is complete and functional by testing it in your copy of this
+     homework file.
+
+   + /Each group member reviews the others' draft solutions and you revise them together/.
+
+   + /Discuss each other's draft and reviews, finalizing the answers./
+
+   + /Show all your work: code, results, and analysis./  Does your code
+     work in this file and produce *exactly* the results you show? 
+
+   + /Post the completed file to Canvas no later than noon on the Tuesday
+     indicated/ in the [[../syllabus.org::schedule][schedule in the syllabus]], naming your file with each
+     person's first name (no spaces in the file name, and don't forget the
+     =.org= extension!).  Only one person should submit the final file.
+
+
+* Hints
+
+
+** Make sure the structure of the grammar can be parsed by the parser.
+
+For example, a recursive descent parser cannot terminate the parse of a
+left-recursive grammar.
+
+
+
+** Use re-entrancy if you need it.
+
+=NLTK= has some notation for this.
+
+
+
+
+* DONE Questions
+
+1. [@1] <<prod-rules>> Remember those silly tags from [[file:./hw1.org::silly-tags][hw1.org]]?  Let
+#
+#
+\begin{align}
+N &= \{ \textrm{FOO,BAR,EGO,NEED,ADS,DUCK,MANSE} \} \ \text{and} \nonumber \\
+T &= \{ \w{dog, black, racing, was, squirrel, tree, burrow, ground hog, bushes, towards,
+hunting, back, wee} \}  \nonumber
+\end{align}
+#
+For each of the following production rules, state from which class of
+language they come and /show why/ by derivation from the language definitions.
+   + rule 1 :: $\txtgrmr{FOO}{EGO \ NEED \ DUCK}$
+   + rule 2 :: $\txtgrmr{FOO \ DUCK}{EGO \ NEED \ DUCK}$ 
+   + rule 3 :: $\txtgrmr{FOO}{EGO \ \w{dog} \ DUCK}$  
+   + rule 4 :: $\txtgrmr{FOO \ \w{ground hog}}{EGO \ \w{dog} \ DUCK \ \w{squirrel}}$  
+   + rule 5 :: $\txtgrmr{FOO}{\w{black} \ \w{dog} \ DUCK}$  
+
+
+This is a challenging question because the start symbol/axiom is missing for consideration. In this
+case, this breaks the typical convention for context-free grammar (CFG). Unrestricted grammar $\epsilon$
+is typically found on the right-hand side, but not on the left hand side of a production rule.
+
+If we were to treat each rule as a separate production rule, here are our observations:
+
+  1. This rule appears to follow $\mathcal{L}_2$ or context free language.  The production rule
+     conforms to equation 12.17 in the class notes where the production rule is in the form:
+
+       \begin{equation}
+       A \rightarrow B \ C
+       \end{equation}
+
+     where the terms in the production are all non-terminals. As such, $A$ can be
+     replaced by any terms in $B \ C$
+
+  2. Rule 2 appears to conform to $\mathcal{L}_1$ (context-sensitive) in that the production rule
+     appears to conform to equation 12.22 in the class notes:
+
+       \begin{equation}
+       u_1 \ A \ u_2  \rightarrow  u_1 \  w \ u_2,
+       \end{equation}
+
+     where $u_1, u_2, w \in (N \cup T)^*$, $A \in N$. In this case, $u_1$ and $u_2$ can be empty strings
+     as defined in equation 12.8 $(\epsilon)$, though $w$ cannot be empty, and can be represented in $\forall a \in \Sigma, \{a\}$.
+
+  3. Similar to the first rule, this too is an $\mathcal{L}_2$ (context free) grammar. This rule
+     follows the same form as equation 12.19 in the book where
+
+       \begin{equation}
+       A \rightarrow w_1 \ b \ w_2
+       \end{equation}
+
+     where $w_1, w_2 \in \{N, \epsilon\}$, and $b \in T$. Critically, this form follows the context-free
+     requirement if and only if $A \in N$ and $w \in (N \cup T)^*$. The right hand side can be
+     represented as $w_1 \ b \ w_2 = w$.
+          
+  4. We think this rule is context-sensitive given it follows the same form as equation 12.22 in the book:
+
+       \begin{equation}
+       u_1 \ A \ u_2  \rightarrow  u_1 \  w \ u_2,
+       \end{equation}
+
+     where $u_1, u_2, w \in (N \cup T)^*$, $A \in N$. In this case, the term $groundhog \in T$, which conforms
+     to the definition of $\mathcal{L}_2$ form, based on the equatioin above.
+
+  5. We think this rule is $\mathcal{L}_3$ (regular) form because the production rule follows the form similar
+     to equation 12.6 (and derived as 12.7) in the class notes similar to below:
+
+       \begin{equation}
+       A \rightarrow w \ B, or
+       A \rightarrow w.
+       \end{equation}
+
+     where $A, B \in N$, $w \in T^*$. As such, the combination of productions from terms $B \in N$ and $w \in T$
+     permit us to combine the production into multiple alternatives in this form, separated by $\vert$.
+     We can similarly do this with context-free ($\mathcal{L}_2$) grammar.
+     
+
+    
+
+2. [@2] <<which-recursn>> Consider the following grammar.
+#+BEGIN_EXAMPLE
+N = {A,B,C,D}
+T = {foo,bar}
+S = {C}
+P = {C -> A B
+     B -> A D
+     B -> A
+     D -> A A
+     A -> T
+     }
+#+END_EXAMPLE
+Is the grammar left-, right-, neither-, or both-recursive?  Why?
+
+
+The grammar follows the graph/tree below:
+#+NAME: graph-q2
+#+CAPTION[Figure 1]: A graph tree from the grammar listed in question 2 
+#+begin_example
+        S =  C
+            / \
+           /   \
+          A --- B
+         / \   /
+        /   \ /
+      [T]    D
+   {foo,bar}
+#+end_example
+
+
+As such, due to the production rules as defined, the maximum number of terms in the sentence is four
+due to the decomposition of the axiom $\mathcal{C}$. We provided a trace of likely tree below:
+
+#+NAME: trace
+#+CAPTION[Figure 2]: A graph tree from the grammar listed in question 2 
+#+begin_example
+       C -> A  B
+            |  | \
+            |  A  D
+            |  |  | \
+            |  |  A  A
+            |  |  |  |
+            T  T  T  T
+#+end_example 
+
+Analysis and Comments:
+The given grammar is neither recursive. The reason is due to the fact that any terms from the axiom
+ultimately ends up with a terminal symbol {foo, bar}. This is evident when looking at the parse tree
+in the [[trace]] we provided.
+
+The given grammar appears to be left recursive because production rule B -> A D is left recursive, and is
+easily demonstrable in [[graph-q2]]. However, because A -> T {foo, bar}, then it can't be considered recursive
+(the symbol 'A' doesn't go back to itself even though it's mapped twice from 'D').
+
+
+
+
+3. [@3] <<manual-parse>> By hand, generate a construct for each unique
+   length of output using the grammar of question [[which-recursn]] and show
+   them and their derivation as an =org= table:
+
+#+NAME: Table-1
+#+CAPTION[Table-1]: Sequence of terms derived from rule sequences
+% Note: Any rule sequence term in square brackets is a symbol that can be expanded
+%       or decomposed. We elected to represent it for readability, with the understanding
+%       that it can be further decomposed into its atomic terms.
+| sentence        | rule sequence and comments                                     |
+|-----------------+----------------------------------------------------------------|
+| foo foo         | C $\rightarrow$ A B $\rightarrow$ T T, A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T                           |
+| foo bar         | C $\rightarrow$ A B $\rightarrow$ T T, A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T                           |
+| bar bar         | C $\rightarrow$ A B $\rightarrow$ T T, A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T                           |
+| bar foo         | C $\rightarrow$ A B $\rightarrow$ T T, A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T                           |
+| foo foo foo foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo foo foo bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo foo bar foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo foo bar bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo bar foo foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo bar bar foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo bar bar bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| foo bar foo bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar foo foo foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar bar foo foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar bar bar foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar bar bar bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar foo bar foo | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar foo bar bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+| bar foo foo bar | C $\rightarrow$ A B $\rightarrow$ T [B], A $\rightarrow$ T, B $\rightarrow$ A $\rightarrow$ T, B $\rightarrow$ [D] $\rightarrow$ A A $\rightarrow$ T T |
+
+
+#+CAPTION[easier-to-read-chart]: This is easier to read in org, than the chart above, which is for the PDF printout
+#+begin_comment
+| sentence        | rule sequence and comments                                     |
+|-----------------+----------------------------------------------------------------|
+| foo foo         | C -> A B -> T T, A -> T, B -> A -> T                           | 0
+| foo bar         | C -> A B -> T T, A -> T, B -> A -> T                           |
+| bar bar         | C -> A B -> T T, A -> T, B -> A -> T                           | 2
+| bar foo         | C -> A B -> T T, A -> T, B -> A -> T                           |
+| foo foo foo foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 4
+| foo foo foo bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| foo foo bar foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 6
+| foo foo bar bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| foo bar foo foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 8
+| foo bar bar foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| foo bar bar bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 10
+| foo bar foo bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| bar foo foo foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 12
+| bar bar foo foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| bar bar bar foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 14
+| bar bar bar bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| bar foo bar foo | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 16
+| bar foo bar bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T |
+| bar foo foo bar | C -> A B -> T [B], A -> T, B -> A -> T, B -> [D] -> A A -> T T | 18
+#+end_comment
+
+
+Answer:
+The grammatical production rule in [[which-recursn]] allowed us to construct the likely parse tree as a [[trace]] from
+question 2. As a result, we've listed all the possible permutations of the sentence in [[Table-1]].
+
+You'll notice that the possible permutations for the most part yield the same predictable rule sequence.
+
+Note - the square bracket notation in [[Table-1]] represents a term that can be further expanded as Chris explained
+on Friday's Zoom meeting. For brevity, we included the decomposed (bracketed) terms within the same line into
+its atomic terms (ie - [D] $\rightarrow$ A A $\rightarrow$ T T)
+
+
+
+4. [@4] <<regex>> For the terminals in question [[prod-rules]], write the
+   minimum number of Python regular expressions to distinguish among them,
+   using conditionals, and ordering the regexs into a tree until all
+   terminals are recognized without ambiguities.  Carry your tree out until
+   each terminal has a regular expression that places it in the leaves.
+   Include a sketch of your tree if you think it will help!
+
+#+begin_comment
+{
+    (r"b[a-z]*"): {
+        matches (r"bu[a-z]*") : {
+            matches (r"burrow"):
+	        'matches' : 'burrow',
+	        'else': 'bushes'
+        },
+	else (r"back") : {
+	    'matches': 'back',
+	    'else': 'black'
+        }
+    },
+    (r"[a-z]*g[a-z]*"): {
+        matches (r"[a-z]*ing"): {
+            matches (r"racing"):
+	        'matches' : 'racing',
+	        'else' : 'hunting'
+        },
+        else : {
+	    matches (r"dog"): {
+	       'matches': 'dog',
+	       'else' : 'ground hog'
+	    }
+        }
+    },
+    (r"[a-z]*ee"): {
+        matches (r"wee") {
+	    'matches' : 'wee',
+	    'else' : 'tree'
+        
+    },
+    (r"[a-z]*wa[a-z]*"): {
+        matches (r"was"):
+	    'matches': 'was',
+	    'else' : towards 
+    },
+    
+    'terminal': 'squirrel'
+}
+#+end_comment
+
+Analysis and Comments:
+
+For the regular expressions above, please observe the annotations below:
+   1.(r"b[a-z]*"): This is a regular expression pattern that matches words that start with 'b' followed by any number of lowercase letters. It has a nested dictionary with the following key-value pair:
+      ->(r"bu[a-z]*"): This is another regular expression pattern that matches words starting with 'bu' followed by any number of lowercase letters. The associated terminal value is 'burrow'.
+        -> From here we have the regular expression (r"burrow") to exactly
+   match on the word burrow, else we have bushes.
+      -> The other two words are "back" and "black" that start with a "b",
+   so we have the regular expression (r"back") to differentiate.
+     
+
+   3.(r"[a-z]*g[a-z]*"): This pattern matches words that contain a 'g' surrounded by any number of lowercase letters. It has a nested dictionary with the following key-value pair:
+      -> (r"[a-z]*ing"): This pattern matches words ending with 'ing' and
+   has an associated regex (r"racing") to differentiate between "hunting
+   and "racing".
+      -> (r"dog"): This regular expression pattern matches the exact word
+   'dog', and its associated terminal value is 'dog'. This path is for the
+   last two words with 'g' in them. Matches on (r"dog") to differentiate
+   between "dog" and "ground hog"
+
+   4. (r"[a-z]*ee"): This pattern matches the words containing 'ee'
+      -> we match on (r"wee") to differentiate between the two words "tree"
+      and "wee".
+
+   5.(r"[a-z]*wa[a-z]*"): This pattern matches words that contain 'wa'
+   somewhere within them.
+      -> we match on (r"was") to differentiate between "was" and "towards"
+
+   6.'terminal': 'squirrel': This is the default terminal value for any words that do not match any of the previous regular expression patterns.
+
+
+5. [@5] <<regex-imp>> Now implement your regular expression tree in
+   question [[regex]] and show the code and results.
+   
+#+begin_src python :results output
+
+import re
+
+def tree(word):
+    if re.match(r"b[a-z]*", word):
+        if re.match(r"bu[a-z]*", word):
+            if word == "bushes":
+                print(f"word: {word} -> match found: [{word}]")
+            else:
+                print(f"word: {word} -> match found: [{word}]")
+        else:
+            if word == "back":
+                print(f"word: {word} -> match found: [{word}]")
+            else:
+                print(f"word: {word} -> match found: [{word}]")
+    elif re.match(r"[a-z]*g[a-z]*", word):
+        if re.match(r"[a-z]*ing", word):
+            if word == "racing":
+                print(f"word: {word} -> match found: [{word}]")
+            else:
+                print(f"word: {word} -> match found: [{word}]")
+        elif word == "dog":
+            print(f"word: {word} -> match found: [{word}]")
+        else:
+            print(f"word: {word} -> match found: [{word}]")
+    elif re.match(r"[a-z]*ee", word):
+        if word == "wee":
+            print(f"word: {word} -> match found: [{word}]")
+        else:
+            print(f"word: {word} -> match found: [{word}]")
+    elif re.match(r"[a-z]*wa[a-z]*", word):
+        if word == "was":
+            print(f"word: {word} -> match found: [{word}]")
+        else:
+            print(f"word: {word} -> match found: [{word}]")
+    else:
+        print(f"word: {word} -> match found: [{word}]")
+
+words = ["dog", "black", "racing", "was", "squirrel", "tree", "burrow", "ground hog", "bushes", "towards", "hunting", "back", "wee"]
+for word in words:
+    tree(word)
+
+#+end_src
+
+#+RESULTS:
+#+begin_example
+word: dog -> match found: [dog]
+word: black -> match found: [black]
+word: racing -> match found: [racing]
+word: was -> match found: [was]
+word: squirrel -> match found: [squirrel]
+word: tree -> match found: [tree]
+word: burrow -> match found: [burrow]
+word: ground hog -> match found: [ground hog]
+word: bushes -> match found: [bushes]
+word: towards -> match found: [towards]
+word: hunting -> match found: [hunting]
+word: back -> match found: [back]
+word: wee -> match found: [wee]
+#+end_example
+
+
+
+
+
+6.  [@6] <<first-gram>> Write a grammar that captures the following sentences:
+#
+   + sentence 1 :: ``The cheerful black dog slept quietly by the chair.''
+   + sentence 2 :: ``A sleepy yellow dog stretched his back.''
+   + sentence 3 :: ``Somebody downstairs made the coffee.''
+#
+Put the phrases generated by each rule from these sentences alongside the
+rules, again as an =org= table (this example is *JUST to illustrate format,
+it is not correct!*):
+#
+
+#+NAME: Table-2
+#+CAPTION[Table-2]: Rule and phrase table for parsing the sentences in Question 6
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| rule                                            | phrase                                                                          |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| S $\rightarrow$ NP VP                           | (S (NP (The cheerful black dog))(VP (slept quietly by the chair)))              |
+|                                                 | (S (NP (A sleepy yellow dog))(VP (stretched his back)))                         |
+|                                                 | (S (NP (Somebody downstairs))(VP (made the coffee)))                            |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| NP $\rightarrow$ DT AJP $\vert$ N LOC           | (NP (DT The)(AJP cheerful black dog))                                           |
+|                                                 | (NP (DT A)(AJP sleepy yellow dog))                                              |
+|                                                 | (NP (N Somebody)(LOC downstairs))                                               |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| AJP $\rightarrow$ ADJ ADJ N                     | (AJP (ADJ cheerful)(ADJ black)(N dog))                                          |
+|                                                 | (AJP (ADJ sleepy)(ADJ yellow)(N dog))                                           |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| VP $\rightarrow$ V AVP $\vert$ V DO             | (VP (V slept)(AVP quietly by the chair.))                                       |
+|                                                 | (VP (V stretched)(DO his back.))                                                |
+|                                                 | (VP (V made)(DO the coffee.))                                                   |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| AVP $\rightarrow$ ADV PP                        | (AVP (ADV quietly)(PP by the chair.))                                           |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| pp $\rightarrow$ IN DT N T                      | (PP (IN by)(DT the)(N chair))                                                   |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+| DO $\rightarrow$ PRN N T $\vert$ D N T          | (DO (PRN his)(N back)(T .))                                                     |
+|                                                 | (DO (DT the)(N coffee)(T .))                                                    |
+|-------------------------------------------------+---------------------------------------------------------------------------------|
+
+
+#+NAME: first-gram-symbols
+#+CAPTION[first-gram-symbols]: These are the derivation of symbols used for question 6
+#+begin_example
+grammar sentence SYMBOLS: 
+  AJP = adjective phrase
+  ADJ = adjective
+  AVP = adverb phrase
+  ADV = adverb
+  DO = direct object
+  PSP = posessive direct object
+  PRN = pronoun
+  PP = prepositional phrase
+  IN = indirect object/word (technically possessive, but don't know how to categorise)
+  LOC = location
+  T = terminal punctuation (typically '.')
+#+end_example
+
+
+#+NAME: example-parse
+#+CAPTION[example-parse]: This is an example parse output from the NLTK recursive descent parse module
+#+begin_example
+  [ * S ]
+E [ * NP VP ]
+E [ * DT AJP VP ]
+E [ * 'The' AJP VP ]
+M [ 'The' * AJP VP ]
+M [ 'The' 'cheerful' * ADJ N VP ]
+M [ 'The' 'cheerful' 'black' * N VP ]
+M [ 'The' 'cheerful' 'black' 'dog' * VP ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' * AVP ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' 'quietly' * PP ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' 'quietly' 'by' * DT N T ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' 'quietly' 'by' 'the' * N T ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' 'quietly' 'by' 'the' 'chair' * T ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' 'quietly' 'by' 'the' 'chair' '.' ]
+M [ 'The' 'cheerful' 'black' 'dog' 'slept' * DO ]
+#+end_example
+
+
+#+NAME: example-tree-sentences
+#+CAPTION[example-tree-sentence-1]: This is an example parse tree drawn by hand derived from sentence 1, from bottom up approach
+#+begin_example
+the cheerful black dog slept quietly by the chair .
+ !      !      !     !   !      !     !  !    !   !
+ !      !      ^.....^   !      !     ^..^.PP.^   !
+ !      ^....AJP.....^   !      ^....AVP......^   !
+ ^........NP.........^   ^.........VP.........^   !
+ ^.....................S......................^...^
+
+ 
+A sleepy yellow dog stretched his back .
+!    !      !    !      !      !    !  !
+!    ^..AJP.^....^      !      ^.DO.^  !
+^.......NP.......^      ^.....VP....^  !
+^.................S.................^..^
+
+
+Somebody downstairs made the coffee .
+ !           !        !   !    !    !
+ !           !        !   ^.DO.^    !
+ ^....NP.....^        ^...VP...^    !
+ ^...............S.............^....^
+#+end_example
+
+Analysis and Comments:
+Please note that none of us are linguists so we derived the symbols based on our limited
+knowledge of the English grammar. We did not pursue further granularity in grammars or token POS
+that are unfamiliar to us. I'd also point out that we added [[first-gram-symbols]] to assist you with
+decomposing the meaning of the symbols used in [[Table-2]].
+
+Though we had asked the professor the requirements of this question, it wasn't immediately clear
+during Zoom on what the 'phrase' format should be. The example certainly helped, though in reality,
+the parser would not do it this way. Instead, the parser would perform traversals in a manner
+similar to that in [[example-parse]].
+
+To help explain the subdivisions (or parseing) in the sentences, we included [[example-tree-sentences]]
+that illustrates the abstraction of the syntax (though not to the granular detail as the part-of-
+speech), which clearly illustrates the higher-level rules defined in [[Table-2]].
+
+
+
+
+7. [@7] <<recur-desc-parser>> Now implement the grammar of question
+   [[first-gram]] as a recursive descent parser.  Parse each sentence,
+   showing the results, and compare them.  What do you observe?
+
+
+#+begin_src python :results output
+from nltk import *
+from nltk.grammar import *
+from nltk.parse import *
+
+NO_DEBUG = 0
+MIN_DEBUG = 1
+VERBOSE_DEBUG = 2
+
+# create a function we can call to create parser
+def createRecursiveDescentParser(rules, sentence, t):
+    p = RecursiveDescentParser( CFG.fromstring(rules), trace=(2 if t else 0) ) 
+    tokens = re.findall(r"[\w']+|[.,!?;]", sentence)     # do not use 'split' because it doesn't find punctuation!  
+    p_tree = p.parse(tokens)
+    trees = list(map(lambda t: t, p_tree))                          #[t for t in p_tree]
+    return trees
+
+
+# function defn done, now let's define const -----------------------------------------------------------------
+S1 = 'The cheerful black dog slept quietly by the chair.'
+S2 = 'A sleepy yellow dog stretched his back.'
+S3 ='Somebody downstairs made the coffee.'
+
+# toni wants one rule to rule them all (tolkien)! ring of parsing powah! (womp womp)
+grammar = """
+### grammatical rules
+	S -> NP VP
+	NP -> DT AJP | N LOC
+	AJP -> ADJ ADJ N
+	VP -> V AVP |  V DO
+	AVP -> ADV PP
+	PP -> IN DT N T
+	DO -> PRN N T | DT N T
+### lexical rules
+	DT -> 'the' |  'a'
+	ADJ -> 'cheerful' | 'black' | 'sleepy' | 'yellow'
+	N -> 'dog' | 'chair' | 'back' | 'somebody' | 'coffee'
+	V -> 'slept' | 'stretched' | 'made'
+	ADV -> 'quietly'
+	IN -> 'by'
+	PRN -> 'his'
+	LOC -> 'downstairs'
+	T -> '.'
+"""
+
+# now that's done, let's define the grammars for each sentences ----------------------------------------------
+# grammar sentence SYMBOLS: (always explain for points! do not assume professor will understand...)
+#   AJP = adjective phrase
+#   ADJ = adjective
+#   AVP = adverb phrase
+#   ADV = adverb
+#   DO = direct object
+#   PSP = posessive direct object
+#   PRN = pronoun
+#   PP = prepositional phrase
+#   IN = indirect object/word (technically possessive, but don't know how to categorise)
+#   LOC = location
+#   T = terminal punctuation (typically '.')
+
+
+sentences = [S1, S2, S3]
+
+for i in sentences:
+    sentence = i.lower()
+    print( '\nparsing sentence: {}'.format( sentence ) )
+    s_tree = createRecursiveDescentParser(grammar, sentence, NO_DEBUG)
+    print( list(map(lambda x: print(x), s_tree)) )
+    # s_tree[0].draw()
+    
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+parsing sentence: the cheerful black dog slept quietly by the chair.
+(S
+  (NP (DT the) (AJP (ADJ cheerful) (ADJ black) (N dog)))
+  (VP
+    (V slept)
+    (AVP (ADV quietly) (PP (IN by) (DT the) (N chair) (T .)))))
+[None]
+
+parsing sentence: a sleepy yellow dog stretched his back.
+(S
+  (NP (DT a) (AJP (ADJ sleepy) (ADJ yellow) (N dog)))
+  (VP (V stretched) (DO (PRN his) (N back) (T .))))
+[None]
+
+parsing sentence: somebody downstairs made the coffee.
+(S
+  (NP (N somebody) (LOC downstairs))
+  (VP (V made) (DO (DT the) (N coffee) (T .))))
+[None]
+#+end_example
+
+
+Analysis and Comments:
+The resuts seem to comply with the grammatical rules we had set. The rules we defined were rather rigid, and
+the sentences we parsed wasn't too complex, so the parser did not have much trouble finding a parse tree that
+matched. Additionally, because we had drawn the parse tree by hand (see [[example-tree-sentences]]), we were able
+to quickly see and derive common forms of the grammar which we were able to write rules for.
+
+Go-back:
+Per Ademola's question on Slack (23 October @1853 ET), we modified the code to reflect the professor's
+instruction to lower-case everything. Chris thinks that this will ultimately affect parsing to some degree
+though can't be quantified at this time. He thinks it should have been preserved because certain transitive
+words derive meaning (and sometimes part-of-speech) from their case sensitivity.
+
+
+
+8. <<chart-parser>> Following on, implement the grammar of question
+   [[first-gram]] as a chart parser.  Parse each sentence, showing the results,
+   and compare these chart parsing results to your results in question
+   [[recur-desc-parser]].  What do you observe?
+
+#+begin_src python :results output
+from nltk import *
+from nltk.grammar import *
+from nltk.parse import *
+
+NO_DEBUG = 0
+MIN_DEBUG = 1
+VERBOSE_DEBUG = 2
+
+# create a function we can call to create parser
+def createChartParser(rules, sentence, t):
+    p = ChartParser( CFG.fromstring(rules), trace=(2 if t else 0) )     
+    tokens = re.findall(r"[\w']+|[.,!?;]", sentence)     # do not use 'split' because it doesn't find punctuation!      
+    p_tree = p.parse(tokens)
+    trees = list(map(lambda t: t, p_tree))                          #[t for t in p_tree]
+    return trees
+
+
+# function defn done, now let's define const -----------------------------------------------------------------
+S1 = 'The cheerful black dog slept quietly by the chair.'
+S2 = 'A sleepy yellow dog stretched his back.'
+S3 ='Somebody downstairs made the coffee.'
+
+# toni wants one rule to rule them all (tolkien)! ring of parsing powah! (womp womp)
+grammar = """
+### grammatical rules
+	S -> NP VP
+	NP -> DT AJP | N LOC
+	AJP -> ADJ ADJ N
+	VP -> V AVP |  V DO
+	AVP -> ADV PP
+	PP -> IN DT N T
+	DO -> PRN N T | DT N T
+### lexical rules
+	DT -> 'the' | 'a'
+	ADJ -> 'cheerful' | 'black' | 'sleepy' | 'yellow'
+	N -> 'dog' | 'chair' | 'back' | 'somebody' | 'coffee'
+	V -> 'slept' | 'stretched' | 'made'
+	ADV -> 'quietly'
+	IN -> 'by'
+	PRN -> 'his'
+	LOC -> 'downstairs'
+	T -> '.'
+"""
+
+# now that's done, let's define the grammars for each sentences ----------------------------------------------
+# grammar sentence SYMBOLS: (always explain for points! do not assume professor will understand...)
+#   AJP = adjective phrase
+#   ADJ = adjective
+#   AVP = adverb phrase
+#   ADV = adverb
+#   DO = direct object
+#   PSP = posessive direct object
+#   PRN = pronoun
+#   PP = prepositional phrase
+#   IN = indirect object/word (technically possessive, but don't know how to categorise)
+#   LOC = location
+#   T = terminal punctuation (typically '.')
+
+
+sentences = [S1, S2, S3]
+
+for i in sentences:
+    sentence = i.lower()
+    print( '\nparsing sentence: {}'.format( sentence ) )
+    s_tree = createChartParser(grammar, sentence, NO_DEBUG)
+    print( list(map(lambda x: print(x), s_tree)) )
+    # s_tree[0].draw()
+
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+parsing sentence: the cheerful black dog slept quietly by the chair.
+(S
+  (NP (DT the) (AJP (ADJ cheerful) (ADJ black) (N dog)))
+  (VP
+    (V slept)
+    (AVP (ADV quietly) (PP (IN by) (DT the) (N chair) (T .)))))
+[None]
+
+parsing sentence: a sleepy yellow dog stretched his back.
+(S
+  (NP (DT a) (AJP (ADJ sleepy) (ADJ yellow) (N dog)))
+  (VP (V stretched) (DO (PRN his) (N back) (T .))))
+[None]
+
+parsing sentence: somebody downstairs made the coffee.
+(S
+  (NP (N somebody) (LOC downstairs))
+  (VP (V made) (DO (DT the) (N coffee) (T .))))
+[None]
+#+end_example
+
+
+
+
+Analysis:
+We do not see any differences in the results from the [[recur-desc-parser]] results vice chart parser. This
+is to be expected since the mechanisms of both parsers is to explore the leaves beneath $\mathcal{S}$.
+A RecursiveDescentParser 'traverses' or expands the fringes of a tree, while ChartParser uses the grammar
+rules passed into it to take its next steps. On a rigidly-defined grammar set, matching can be performed
+relatively quickly for any input sentences where lexical rules are defined
+
+Just like in question 7, our sentences weren't too complex, and the common structures of the sentences
+did not permit ambiguity. Hence, there were no opportunities to recursively traverse the grammar tree.
+
+9. <<clock>> Extend your grammar for the sentences in question
+   [[recur-desc-parser]]  so that it can parse sentences 4--6 below.  Time the
+   implementation's performance for each sentence, doing this 1000 times
+   for each sentence for better estimates, and put the results  in an =org= table.
+   + sentence 4 :: ``We had a long walk to the park and Vinny played with
+     three other dogs.''
+   + sentence 5 :: ``It was sunny today but might not be tomorrow.''
+   + sentence 6 :: ``There are 49 angels dancing on the head of this pin.''
+
+#+begin_comment
+Note to professor - the code below takes a long time to execute. Running sentences 4-6 alone will take something
+like 90 minutes in total.
+#+end_comment
+
+#+begin_src python :results output
+
+from nltk import *
+from nltk.grammar import *
+from nltk.parse import *
+import time
+
+NO_DEBUG = 0
+MIN_DEBUG = 1
+VERBOSE_DEBUG = 2
+
+# create a function we can call to create parser
+def createRecursiveDescentParser(rules, sentence, t):
+    p = RecursiveDescentParser( CFG.fromstring(rules), trace=(2 if t else 0) ) 
+    tokens = re.findall(r"[\w']+|[.,!?;]", sentence)     # do not use 'split' because it doesn't find punctuation!  
+    p_tree = p.parse(tokens)
+    trees = list(map(lambda t: t, p_tree))                          #[t for t in p_tree]
+    return trees
+	
+	
+
+# function defn done, now let's define const -----------------------------------------------------------------
+S1 = 'The cheerful black dog slept quietly by the chair.'
+S2 = 'A sleepy yellow dog stretched his back.'
+S3 ='Somebody downstairs made the coffee.'
+S4 = 'We had a long walk to the park and Vinny played with three other dogs.'
+S5 = 'It was sunny today but might not be tomorrow.'
+S6 = 'There are 49 angels dancing on the head of this pin.'
+
+
+# toni wants one rule to rule them all (tolkien)! ring of parsing powah! (womp womp)
+grammar = """
+### grammatical rules
+	S -> NP VP | NP VP CONJ | NP VP CMP
+	CONJ -> CC S
+	CMP -> IN S
+		
+	NP -> PRN | DT | MD RB | DT N | DT AJP | N LOC
+	
+	VP -> V P | P 
+	
+	P -> PP | AVP | AJP                 
+	
+	AJP -> ADJ N | ADJ ADJ N
+	AVP -> DT ADJ N | ADJ N | NUM N V | ADV PP | V ADV PP
+	PP -> AVP NPP | NUM N V | IN DT N T | NPP | NPP T | N T 
+	NPP -> PRN N | DT N | IN NUM ADJ N | IN DT N
+ 
+### lexical rules
+	DT -> 'the' | 'a' | 'there' | 'this'
+	ADJ -> 'cheerful' | 'black' | 'sleepy' | 'yellow'
+	N -> 'dog' | 'chair' | 'back' | 'somebody' | 'coffee' | 'walk' | 'park' | 'dogs' | 'today' | 'tomorrow' | 'angels' | 'head' | 'pin'
+	V -> 'slept' | 'stretched' | 'made' | 'had' | 'played' | 'was' | 'be' | 'are' | 'dancing'
+	ADJ -> 'long' | 'other' | 'sunny'
+	ADV -> 'quietly'
+	IN -> 'by' | 'to' | 'with' | 'on' | 'of'
+	PRN -> 'his' | 'we' | 'vinny' | 'it' 
+	LOC -> 'downstairs'
+	CC -> 'and' | 'but'
+	NUM -> 'three' | '49'
+	MD -> 'might'
+	RB -> 'not'
+	T -> '.'
+"""
+
+# now that's done, let's define the grammars for each sentences ----------------------------------------------
+# grammar sentence SYMBOLS: (always explain for points! do not assume professor will understand...)
+#   AJP = adjective phrase
+#   ADJ = adjective
+#   AVP = adverb phrase
+#   ADV = adverb
+#   DO = direct object
+#   PSP = posessive direct object
+#   PRN = pronoun
+#   PP = prepositional phrase
+#   P = phrase
+#   IN = interjection (typically possessive, but don't know how to categorise)
+#   LOC = location
+#   T = terminal punctuation (typically '.')
+#   CONJ = conjunction
+#   CC = coordinating conjunction
+
+
+
+# and now call the utility methods to run the sentences defined ----------------------------------------------
+sentenceList = [S4, S5, S6]
+
+for i in sentenceList:
+    start = time.time()    
+    sentence = i.lower()
+    
+    for j in range(1):
+        createRecursiveDescentParser(grammar, sentence, NO_DEBUG)
+    
+    print('elapsed time: [{}]'.format(time.time()-start))
+
+print('done')
+
+#+end_src
+
+#+RESULTS:
+: elapsed time: [0.24130821228027344]
+: elapsed time: [0.2042250633239746]
+: elapsed time: [0.33754920959472656]
+: done
+
+
+#+NAME: Table-3
+#+CAPTION[Table-3]: Table 3 - runtimes for sentences 4-6 executed 1000x each
+| trial #    |  sentence 4  |  sentence 5  |  sentence 6  |
+|------------|--------------|--------------|--------------|
+|     1      |  1154.7 sec  |  596.01 sec  |  1711.9 sec  |
+|     2      |  1213.7 sec  |  628.46 sec  |  1784.3 sec  |
+|     3      |  705.50 sec  |  622.96 sec  |  963.14 sec  |
+
+
+Analysis and Comments:
+There are patterns that are common to sentences in question [[recur-desc-parser]], though the sentences
+for question 9 tend to be more compound, with multiple phrases of varying types that needed parsing.
+In this case, we couldn't 'extend' the senteces from [[recur-desc-parser]] but rather re-use and add
+to it to accomodate the more complex structure. The lexical rules also had to grow since the word
+pool was also larger.
+
+Per instruction on the question, see [[Table-3]] for results. We ran it three times to ensure we were
+getting consistent performance.
+
+Also of note, we removed extraneous loops from the implementation in [[recur-desc-parser]] as you see
+above because we were seeing runtimes between 7-11 minutes depending on the complexity of the
+sentences. Even though sentence 6 was not complex (or did not have conjunction), the phrases within
+it contained proper subj/verb-phrase components, but was instead separable by the interjection 'on'.
+Even so, because of the grammar form, the parser is able to parse this in 3 possible ways which
+resulted in the longer runtime.
+
+Go-back: After analyzing Question 11, it occured to us that the 'IN' part-of-speech
+is actually an infinitive verb (which I didn't know existed, like Santa or red M&Ms). When we
+started the homework weeks ago, the original thinking was that 'IN' formed most phrases, specifically 
+demonstrable phrases. In international school, these phrases are often taught as a phrase sometimes
+in the form of a direct (or indirect) object preceded by a subject-verb combination typically
+as a form to convey or illustrate the verb's affect such as:
+
+   'Vinny walked with Toni'
+   'She started the blaze by lighting a torch'
+   'It gasped to breathe freely'
+
+
+
+
+
+10. <<avm-graph>> Consider this attribute-value matrix:
+#
+#+begin_export latex
+\begin{center}
+\avm{
+[ CAT  & s \\
+  HEAD & [ AGR   & \1 [ NUM & sg \\
+                        PER & 3 ] \\
+           SUBJ  & [ AGR \1 ] ] ] \\
+}.
+\end{center}
+#+end_export
+#
+
+
+Draw the corresponding directed acyclic graph, ideally in Python.  (A hand-drawn figure is fine:
+just photograph it and include the image below, as is done in [[file:../notes.org][notes.org]].)
+
+#+begin_src python :results output
+import networkx as nx
+import matplotlib.pyplot as plt
+
+filename = './images/q10_avm_dag.png'
+graph = nx.DiGraph()
+graph.add_edges_from( [('START', 'CAT'),
+                       ('START', 'HEAD'),
+                       ('CAT','s'), 
+                       ('HEAD','AGR'), 
+                        ('AGR','NUM'),('NUM','sg'),
+                        ('AGR','PER'),('PER','3'),
+                       ('HEAD','SUBJ'),
+                        ('SUBJ','AGR')
+                       ] 
+                    )
+
+plt.tight_layout()
+nx.draw_shell(graph, with_labels=True, arrows=True, font_size=8)
+plt.savefig(filename, format='PNG')
+plt.clf()
+
+print( 'please see output image at [[{}]]'.format(filename) )
+#+end_src
+
+#+RESULTS:
+: please see output image at [[./images/q10_avm_dag.png]]
+
+
+Analysis and comments:
+We're using NetworkX and matplotlib libraries as recommended in <<https://www.nltk.org/book/ch14.html>>NLTK
+book, chapter 14. It would appear that 'CAT' and 's' are a separate entity altogether as shown in [[avm-graph]].
+In this case, 'HEAD' branches out to 'SUBJ' and 'AGR' as intended, and the singleton on 'AGR' is preserved
+rather than represented as a recursive loop which isn't intended by the '(1)'. 'Reentrancy' can essentially
+be thought of as a singleton.
+
+A demonstration of this directed acyclic graph is on [[fig:q10_avm_dag]].
+
+#+NAME: fig:q10_avm_dag
+#+CAPTION[Directed Acyclic Graph for Question 10]: The directed acyclic graph shows two separate trees
+[[file:./images/q10_avm_dag.png]]
+
+
+11. [@11] <<basic-fea-struc>> Now extend your grammar from question [[clock]] to include features
+    relevant to subject-verb agreement, using =nltk.FeatStruct()= from
+    chapter nine, so that you can parse sentences 1--9.  Using
+    =cp.parse()=, print and study the parse trees for each sentence.  Do
+    you agree with them?  Why or why not?
+
+   + sentence 7 :: ``The black dogs are playing with the elf toy.''
+   + sentence 8 :: ``The yellow dog slept in my pajamas.''
+   + sentence 9 :: ``We will take two long rides in the country next week.''
+
+#+NAME: q11.cfg
+#+CAPTION[q11-contents]: This block contains the contents of the q11.cfg file used to create the parser in question 11
+#+begin_example
+
+## Natural Language Toolkit: feat0.fcfg
+##
+## First example of a feature-based grammar for English, illustrating
+## value-sharing of NUM and TENSE features.
+## Used in Feature-Based Grammars chapter.
+## 
+## Author: Chris & Rishi
+## URL: <http://nltk.sourceforge.net>
+## For license information, see LICENSE.TXT
+
+% start S
+
+### grammatical rules
+S -> NP[NUM=?n] VP[NUM=?n] | NP[NUM=?n] VP[NUM=?n] CONJ | NP[NUM=?n] VP[NUM=?n] CMP
+CONJ -> CC S
+CMP -> IN S
+		
+NP[NUM=?n] -> PRN[NUM=?N] | DT | MD RB | DT N | DT AJP | N NNS
+	
+VP[NUM=?n] -> TV[NUM=?N] P | P 
+	
+P -> PP | AVP | AJP                 
+	
+AJP -> ADJ N[NUM=?N] | ADJ ADJ N[NUM=?N]
+AVP -> DT ADJ N[NUM=?N] | ADJ N[NUM=?N] | NUM N[NUM=?N] TV[NUM=?N] | ADV PP | TV[NUM=?N] ADV PP
+PP -> AVP NPP | NUM N[NUM=?N] TV[NUM=?N] | IN DT N[NUM=?N] T | NPP | NPP T | N[NUM=?N] T 
+NPP -> PRN[NUM=?N] N[NUM=?N] | DT N[NUM=?N] | IN NUM ADJ N[NUM=?N] | IN DT N[NUM=?N]
+ 
+### lexical rules
+DT -> 'the' | 'a' | 'there' | 'this'
+ADJ -> 'cheerful' | 'black' | 'sleepy' | 'yellow'
+	
+N[NUM=sg] -> 'dog' | 'chair' | 'back' | 'somebody' | 'coffee' | 'walk' | 'park' | 'today' | 'tomorrow' | 'head' | 'pin' | 'elf' | 'toy' | 'country' | 'week'
+N[NUM=pl] -> 'dogs' |'angels' | 'pajamas'
+	
+TV[TENSE=past, NUM=sg] -> 'slept' | 'stretched' | 'made' | 'had' | 'played' | 'was'
+TV[TENSE=pres, NUM=pl] -> 'are' | 'be' | 'dancing' | 'playing' | 'take'
+	
+ADJ -> 'long' | 'other' | 'sunny' | 'next'
+ADV -> 'quietly'
+IN -> 'by' | 'to' | 'with' | 'on' | 'of' | 'in'
+PRN[NUM=sg] -> 'his' | 'vinny' | 'it' | 'my'
+PRN[NUM=pl] -> 'we' 
+NNS -> 'downstairs' | 'rides'
+CC -> 'and' | 'but'
+CD -> 'three' | '49' | 'two'
+MD -> 'might' | 'will'
+RB -> 'not'
+T -> '.'
+
+#+end_example
+
+#+begin_src python :results output
+############### test #################
+
+from nltk import *
+from nltk.grammar import *
+from nltk.parse import *
+import time
+
+NO_DEBUG = 0
+MIN_DEBUG = 1
+VERBOSE_DEBUG = 2
+
+# create a function we can call to create parser
+def parseFOPC(fcfgLoc, sentence, t):
+    p = load_parser( fcfgLoc, trace=t )                  # 'load_parser' is looking for URL, so we have to load file!
+    tokens = re.findall(r"[\w']+|[.,!?;]", sentence)     # do not use 'split' because it doesn't find punctuation!  
+    p_tree = p.parse(tokens)
+    trees = list(map(lambda t: t, p_tree))               #[t for t in p_tree]
+    return trees
+
+
+# function defn done, now let's define const -----------------------------------------------------------------
+S1 = 'The cheerful black dog slept quietly by the chair.'
+S2 = 'A sleepy yellow dog stretched his back.'
+S3 ='Somebody downstairs made the coffee.'
+S4 = 'We had a long walk to the park and Vinny played with three other dogs.'
+S5 = 'It was sunny today but might not be tomorrow.'
+S6 = 'There are 49 angels dancing on the head of this pin.'
+S7 = 'The black dogs are playing with the elf toy.'
+S8 = 'The yellow dog slept in my pajamas.'
+S9 = 'We will take two long rides in the country next week.'
+
+sep = '-------------------------------------------------------------------------------------------------------'
+sentenceList = [S1,S2,S3,S4,S5,S6,S7,S8,S9]
+cfgLoc = './cfg/q11.fcfg'
+
+for i in sentenceList:
+    sentence = i.lower()
+    print(sep)
+    print( 'printing sentence: {}'.format(sentence) )
+    print(sep)
+    parseFOPC(cfgLoc, sentence, VERBOSE_DEBUG)
+    print('\n\n\ndone!')
+#+end_src
+
+#+RESULTS:
+#+begin_example
+-------------------------------------------------------------------------------------------------------
+printing sentence: the cheerful black dog slept quietly by the chair.
+-------------------------------------------------------------------------------------------------------
+
+Leaf Init Rule:
+|[].........| [0:1] 'the'
+|.[]........| [1:2] 'cheerful'
+|..[].......| [2:3] 'black'
+|...[]......| [3:4] 'dog'
+|....[].....| [4:5] 'slept'
+|.....[]....| [5:6] 'quietly'
+|......[]...| [6:7] 'by'
+|.......[]..| [7:8] 'the'
+|........[].| [8:9] 'chair'
+|.........[]| [9:10] '.'
+Feature Bottom Up Predict Combine Rule:
+|[].........| [0:1] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|[].........| [0:1] NP[NUM=?n] -> DT[] *
+|[>.........| [0:1] NP[NUM=?n] -> DT[] * N[] {}
+|[>.........| [0:1] NP[NUM=?n] -> DT[] * AJP[] {}
+|[>.........| [0:1] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|[>.........| [0:1] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[]........| [1:2] ADJ[] -> 'cheerful' *
+Feature Bottom Up Predict Combine Rule:
+|.[>........| [1:2] AJP[] -> ADJ[] * N[NUM=?N] {}
+|.[>........| [1:2] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|.[>........| [1:2] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|[->........| [0:2] AVP[] -> DT[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|..[].......| [2:3] ADJ[] -> 'black' *
+Feature Bottom Up Predict Combine Rule:
+|..[>.......| [2:3] AJP[] -> ADJ[] * N[NUM=?N] {}
+|..[>.......| [2:3] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|..[>.......| [2:3] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|.[->.......| [1:3] AJP[] -> ADJ[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|...[]......| [3:4] N[NUM='sg'] -> 'dog' *
+Feature Bottom Up Predict Combine Rule:
+|...[>......| [3:4] NP[NUM=?n] -> N[] * NNS[] {}
+|...[>......| [3:4] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|..[-]......| [2:4] AJP[] -> ADJ[] N[NUM='sg'] *
+|..[-]......| [2:4] AVP[] -> ADJ[] N[NUM='sg'] *
+|.[--]......| [1:4] AJP[] -> ADJ[] ADJ[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|.[--]......| [1:4] P[] -> AJP[] *
+Feature Single Edge Fundamental Rule:
+|[---]......| [0:4] NP[NUM=?n] -> DT[] AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|[--->......| [0:4] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[--->......| [0:4] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[--->......| [0:4] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[--]......| [1:4] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|[---]......| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[--->......| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[--->......| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] P[] -> AVP[] *
+|..[->......| [2:4] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] P[] -> AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|....[].....| [4:5] TV[NUM='sg', TENSE='past'] -> 'slept' *
+Feature Bottom Up Predict Combine Rule:
+|....[>.....| [4:5] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|....[>.....| [4:5] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|.....[]....| [5:6] ADV[] -> 'quietly' *
+Feature Bottom Up Predict Combine Rule:
+|.....[>....| [5:6] AVP[] -> ADV[] * PP[] {}
+Feature Single Edge Fundamental Rule:
+|....[->....| [4:6] AVP[] -> TV[NUM=?N] ADV[] * PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|......[]...| [6:7] IN[] -> 'by' *
+Feature Bottom Up Predict Combine Rule:
+|......[>...| [6:7] CMP[] -> IN[] * S[] {}
+|......[>...| [6:7] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|......[>...| [6:7] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|......[>...| [6:7] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.......[]..| [7:8] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|.......[]..| [7:8] NP[NUM=?n] -> DT[] *
+|.......[>..| [7:8] NP[NUM=?n] -> DT[] * N[] {}
+|.......[>..| [7:8] NP[NUM=?n] -> DT[] * AJP[] {}
+|.......[>..| [7:8] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|.......[>..| [7:8] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|......[->..| [6:8] PP[] -> IN[] DT[] * N[NUM=?N] T[] {}
+|......[->..| [6:8] NPP[] -> IN[] DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.......[>..| [7:8] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.......[>..| [7:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.......[>..| [7:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|........[].| [8:9] N[NUM='sg'] -> 'chair' *
+Feature Bottom Up Predict Combine Rule:
+|........[>.| [8:9] NP[NUM=?n] -> N[] * NNS[] {}
+|........[>.| [8:9] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|.......[-].| [7:9] NP[NUM=?n] -> DT[] N[] *
+|.......[-].| [7:9] NPP[] -> DT[] N[NUM='sg'] *
+|......[-->.| [6:9] PP[] -> IN[] DT[] N[NUM=?N] * T[] {?N: 'sg'}
+|......[--].| [6:9] NPP[] -> IN[] DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|......[--].| [6:9] PP[] -> NPP[] *
+|......[-->.| [6:9] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|......[--].| [6:9] P[] -> PP[] *
+Feature Single Edge Fundamental Rule:
+|.....[---].| [5:9] AVP[] -> ADV[] PP[] *
+|....[----].| [4:9] AVP[] -> TV[NUM='sg'] ADV[] PP[] *
+Feature Bottom Up Predict Combine Rule:
+|....[----].| [4:9] P[] -> AVP[] *
+|....[---->.| [4:9] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|....[----].| [4:9] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|[--------].| [0:9] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[-------->.| [0:9] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[-------->.| [0:9] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.....[---].| [5:9] P[] -> AVP[] *
+|.....[--->.| [5:9] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|.....[---].| [5:9] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|....[----].| [4:9] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[--------].| [0:9] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[-------->.| [0:9] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[-------->.| [0:9] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|......[--].| [6:9] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[-].| [7:9] PP[] -> NPP[] *
+|.......[->.| [7:9] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|.......[-].| [7:9] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[-].| [7:9] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[->.| [7:9] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.......[->.| [7:9] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.......[->.| [7:9] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.........[]| [9:10] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|........[-]| [8:10] PP[] -> N[NUM='sg'] T[] *
+|......[---]| [6:10] PP[] -> IN[] DT[] N[NUM='sg'] T[] *
+|......[---]| [6:10] PP[] -> NPP[] T[] *
+|.......[--]| [7:10] PP[] -> NPP[] T[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[--]| [7:10] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[--]| [7:10] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[---]| [6:10] P[] -> PP[] *
+Feature Single Edge Fundamental Rule:
+|.....[----]| [5:10] AVP[] -> ADV[] PP[] *
+|....[-----]| [4:10] AVP[] -> TV[NUM='sg'] ADV[] PP[] *
+Feature Bottom Up Predict Combine Rule:
+|....[-----]| [4:10] P[] -> AVP[] *
+|....[----->| [4:10] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|....[-----]| [4:10] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|[=========]| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[--------->| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[--------->| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.....[----]| [5:10] P[] -> AVP[] *
+|.....[---->| [5:10] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|.....[----]| [5:10] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|....[-----]| [4:10] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[=========]| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[--------->| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[--------->| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|......[---]| [6:10] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[---]| [6:10] P[] -> PP[] *
+Feature Single Edge Fundamental Rule:
+|.....[----]| [5:10] AVP[] -> ADV[] PP[] *
+|....[-----]| [4:10] AVP[] -> TV[NUM='sg'] ADV[] PP[] *
+Feature Bottom Up Predict Combine Rule:
+|........[-]| [8:10] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|........[-]| [8:10] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.......[--]| [7:10] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|.......[-->| [7:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|.......[-->| [7:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|......[---]| [6:10] CMP[] -> IN[] S[] *
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: a sleepy yellow dog stretched his back.
+-------------------------------------------------------------------------------------------------------
+|.a.s.y.d.s.h.b...|
+Leaf Init Rule:
+|[-] . . . . . . .| [0:1] 'a'
+|. [-] . . . . . .| [1:2] 'sleepy'
+|. . [-] . . . . .| [2:3] 'yellow'
+|. . . [-] . . . .| [3:4] 'dog'
+|. . . . [-] . . .| [4:5] 'stretched'
+|. . . . . [-] . .| [5:6] 'his'
+|. . . . . . [-] .| [6:7] 'back'
+|. . . . . . . [-]| [7:8] '.'
+Feature Bottom Up Predict Combine Rule:
+|[-] . . . . . . .| [0:1] DT[] -> 'a' *
+Feature Bottom Up Predict Combine Rule:
+|[-] . . . . . . .| [0:1] NP[NUM=?n] -> DT[] *
+|[-> . . . . . . .| [0:1] NP[NUM=?n] -> DT[] * N[] {}
+|[-> . . . . . . .| [0:1] NP[NUM=?n] -> DT[] * AJP[] {}
+|[-> . . . . . . .| [0:1] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|[-> . . . . . . .| [0:1] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|[-> . . . . . . .| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[-> . . . . . . .| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[-> . . . . . . .| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. [-] . . . . . .| [1:2] ADJ[] -> 'sleepy' *
+Feature Bottom Up Predict Combine Rule:
+|. [-> . . . . . .| [1:2] AJP[] -> ADJ[] * N[NUM=?N] {}
+|. [-> . . . . . .| [1:2] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|. [-> . . . . . .| [1:2] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|[---> . . . . . .| [0:2] AVP[] -> DT[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|. . [-] . . . . .| [2:3] ADJ[] -> 'yellow' *
+Feature Bottom Up Predict Combine Rule:
+|. . [-> . . . . .| [2:3] AJP[] -> ADJ[] * N[NUM=?N] {}
+|. . [-> . . . . .| [2:3] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|. . [-> . . . . .| [2:3] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|. [---> . . . . .| [1:3] AJP[] -> ADJ[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|. . . [-] . . . .| [3:4] N[NUM='sg'] -> 'dog' *
+Feature Bottom Up Predict Combine Rule:
+|. . . [-> . . . .| [3:4] NP[NUM=?n] -> N[] * NNS[] {}
+|. . . [-> . . . .| [3:4] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|. . [---] . . . .| [2:4] AJP[] -> ADJ[] N[NUM='sg'] *
+|. . [---] . . . .| [2:4] AVP[] -> ADJ[] N[NUM='sg'] *
+|. [-----] . . . .| [1:4] AJP[] -> ADJ[] ADJ[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|. [-----] . . . .| [1:4] P[] -> AJP[] *
+Feature Single Edge Fundamental Rule:
+|[-------] . . . .| [0:4] NP[NUM=?n] -> DT[] AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|[-------> . . . .| [0:4] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[-------> . . . .| [0:4] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[-------> . . . .| [0:4] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. [-----] . . . .| [1:4] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|[-------] . . . .| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[-------> . . . .| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[-------> . . . .| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . [---] . . . .| [2:4] P[] -> AVP[] *
+|. . [---> . . . .| [2:4] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|. . [---] . . . .| [2:4] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|. . [---] . . . .| [2:4] P[] -> AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . [---] . . . .| [2:4] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . [-] . . .| [4:5] TV[NUM='sg', TENSE='past'] -> 'stretched' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . [-> . . .| [4:5] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|. . . . [-> . . .| [4:5] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-] . .| [5:6] PRN[NUM='sg'] -> 'his' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-] . .| [5:6] NP[NUM=?n] -> PRN[NUM='sg'] *
+|. . . . . [-> . .| [5:6] NPP[] -> PRN[NUM=?N] * N[NUM=?N] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-> . .| [5:6] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|. . . . . [-> . .| [5:6] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|. . . . . [-> . .| [5:6] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [-] .| [6:7] N[NUM='sg'] -> 'back' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [-> .| [6:7] NP[NUM=?n] -> N[] * NNS[] {}
+|. . . . . . [-> .| [6:7] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|. . . . . [---] .| [5:7] NPP[] -> PRN[NUM='sg'] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [---] .| [5:7] PP[] -> NPP[] *
+|. . . . . [---> .| [5:7] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [---] .| [5:7] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [---] .| [5:7] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . . . [-----] .| [4:7] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[-------------] .| [0:7] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[-------------> .| [0:7] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[-------------> .| [0:7] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . . [-]| [7:8] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|. . . . . . [---]| [6:8] PP[] -> N[NUM='sg'] T[] *
+|. . . . . [-----]| [5:8] PP[] -> NPP[] T[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-----]| [5:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-----]| [5:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . . . [-------]| [4:8] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[===============]| [0:8] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[--------------->| [0:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[--------------->| [0:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [---]| [6:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [---]| [6:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . . . . [-----]| [5:8] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|. . . . . [----->| [5:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|. . . . . [----->| [5:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: somebody downstairs made the coffee.
+-------------------------------------------------------------------------------------------------------
+|.s.d.m.t.c...|
+Leaf Init Rule:
+|[-] . . . . .| [0:1] 'somebody'
+|. [-] . . . .| [1:2] 'downstairs'
+|. . [-] . . .| [2:3] 'made'
+|. . . [-] . .| [3:4] 'the'
+|. . . . [-] .| [4:5] 'coffee'
+|. . . . . [-]| [5:6] '.'
+Feature Bottom Up Predict Combine Rule:
+|[-] . . . . .| [0:1] N[NUM='sg'] -> 'somebody' *
+Feature Bottom Up Predict Combine Rule:
+|[-> . . . . .| [0:1] NP[NUM=?n] -> N[] * NNS[] {}
+|[-> . . . . .| [0:1] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|. [-] . . . .| [1:2] NNS[] -> 'downstairs' *
+Feature Single Edge Fundamental Rule:
+|[---] . . . .| [0:2] NP[NUM=?n] -> N[] NNS[] *
+Feature Bottom Up Predict Combine Rule:
+|[---> . . . .| [0:2] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[---> . . . .| [0:2] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[---> . . . .| [0:2] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . [-] . . .| [2:3] TV[NUM='sg', TENSE='past'] -> 'made' *
+Feature Bottom Up Predict Combine Rule:
+|. . [-> . . .| [2:3] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|. . [-> . . .| [2:3] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|. . . [-] . .| [3:4] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|. . . [-] . .| [3:4] NP[NUM=?n] -> DT[] *
+|. . . [-> . .| [3:4] NP[NUM=?n] -> DT[] * N[] {}
+|. . . [-> . .| [3:4] NP[NUM=?n] -> DT[] * AJP[] {}
+|. . . [-> . .| [3:4] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|. . . [-> . .| [3:4] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|. . . [-> . .| [3:4] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|. . . [-> . .| [3:4] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|. . . [-> . .| [3:4] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . [-] .| [4:5] N[NUM='sg'] -> 'coffee' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . [-> .| [4:5] NP[NUM=?n] -> N[] * NNS[] {}
+|. . . . [-> .| [4:5] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|. . . [---] .| [3:5] NP[NUM=?n] -> DT[] N[] *
+|. . . [---] .| [3:5] NPP[] -> DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|. . . [---] .| [3:5] PP[] -> NPP[] *
+|. . . [---> .| [3:5] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|. . . [---] .| [3:5] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . [---] .| [3:5] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . [-----] .| [2:5] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[---------] .| [0:5] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[---------> .| [0:5] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[---------> .| [0:5] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . [---> .| [3:5] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|. . . [---> .| [3:5] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|. . . [---> .| [3:5] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-]| [5:6] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|. . . . [---]| [4:6] PP[] -> N[NUM='sg'] T[] *
+|. . . [-----]| [3:6] PP[] -> NPP[] T[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . [-----]| [3:6] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . [-----]| [3:6] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . [-------]| [2:6] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[===========]| [0:6] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[----------->| [0:6] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[----------->| [0:6] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . [---]| [4:6] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . [---]| [4:6] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . . [-----]| [3:6] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|. . . [----->| [3:6] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|. . . [----->| [3:6] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: we had a long walk to the park and vinny played with three other dogs.
+-------------------------------------------------------------------------------------------------------
+
+Leaf Init Rule:
+|[]...............| [0:1] 'we'
+|.[]..............| [1:2] 'had'
+|..[].............| [2:3] 'a'
+|...[]............| [3:4] 'long'
+|....[]...........| [4:5] 'walk'
+|.....[]..........| [5:6] 'to'
+|......[].........| [6:7] 'the'
+|.......[]........| [7:8] 'park'
+|........[].......| [8:9] 'and'
+|.........[]......| [9:10] 'vinny'
+|..........[].....| [10:11] 'played'
+|...........[]....| [11:12] 'with'
+|............[]...| [12:13] 'three'
+|.............[]..| [13:14] 'other'
+|..............[].| [14:15] 'dogs'
+|...............[]| [15:16] '.'
+Feature Bottom Up Predict Combine Rule:
+|[]...............| [0:1] PRN[NUM='pl'] -> 'we' *
+Feature Bottom Up Predict Combine Rule:
+|[]...............| [0:1] NP[NUM=?n] -> PRN[NUM='pl'] *
+|[>...............| [0:1] NPP[] -> PRN[NUM=?N] * N[NUM=?N] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|[>...............| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[>...............| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[>...............| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[]..............| [1:2] TV[NUM='sg', TENSE='past'] -> 'had' *
+Feature Bottom Up Predict Combine Rule:
+|.[>..............| [1:2] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|.[>..............| [1:2] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|..[].............| [2:3] DT[] -> 'a' *
+Feature Bottom Up Predict Combine Rule:
+|..[].............| [2:3] NP[NUM=?n] -> DT[] *
+|..[>.............| [2:3] NP[NUM=?n] -> DT[] * N[] {}
+|..[>.............| [2:3] NP[NUM=?n] -> DT[] * AJP[] {}
+|..[>.............| [2:3] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|..[>.............| [2:3] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|..[>.............| [2:3] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|..[>.............| [2:3] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|..[>.............| [2:3] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|...[]............| [3:4] ADJ[] -> 'long' *
+Feature Bottom Up Predict Combine Rule:
+|...[>............| [3:4] AJP[] -> ADJ[] * N[NUM=?N] {}
+|...[>............| [3:4] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|...[>............| [3:4] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|..[->............| [2:4] AVP[] -> DT[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|....[]...........| [4:5] N[NUM='sg'] -> 'walk' *
+Feature Bottom Up Predict Combine Rule:
+|....[>...........| [4:5] NP[NUM=?n] -> N[] * NNS[] {}
+|....[>...........| [4:5] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|...[-]...........| [3:5] AJP[] -> ADJ[] N[NUM='sg'] *
+|...[-]...........| [3:5] AVP[] -> ADJ[] N[NUM='sg'] *
+|..[--]...........| [2:5] AVP[] -> DT[] ADJ[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|..[--]...........| [2:5] P[] -> AVP[] *
+|..[-->...........| [2:5] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|..[--]...........| [2:5] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.[---]...........| [1:5] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[----]...........| [0:5] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[---->...........| [0:5] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[---->...........| [0:5] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|...[-]...........| [3:5] P[] -> AVP[] *
+|...[->...........| [3:5] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|...[-]...........| [3:5] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|..[--]...........| [2:5] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|..[-->...........| [2:5] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|..[-->...........| [2:5] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|...[-]...........| [3:5] P[] -> AJP[] *
+Feature Single Edge Fundamental Rule:
+|..[--]...........| [2:5] NP[NUM=?n] -> DT[] AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|..[-->...........| [2:5] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|..[-->...........| [2:5] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|..[-->...........| [2:5] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|...[-]...........| [3:5] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.....[]..........| [5:6] IN[] -> 'to' *
+Feature Bottom Up Predict Combine Rule:
+|.....[>..........| [5:6] CMP[] -> IN[] * S[] {}
+|.....[>..........| [5:6] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|.....[>..........| [5:6] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|.....[>..........| [5:6] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|......[].........| [6:7] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|......[].........| [6:7] NP[NUM=?n] -> DT[] *
+|......[>.........| [6:7] NP[NUM=?n] -> DT[] * N[] {}
+|......[>.........| [6:7] NP[NUM=?n] -> DT[] * AJP[] {}
+|......[>.........| [6:7] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|......[>.........| [6:7] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|.....[->.........| [5:7] PP[] -> IN[] DT[] * N[NUM=?N] T[] {}
+|.....[->.........| [5:7] NPP[] -> IN[] DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|......[>.........| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|......[>.........| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|......[>.........| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.......[]........| [7:8] N[NUM='sg'] -> 'park' *
+Feature Bottom Up Predict Combine Rule:
+|.......[>........| [7:8] NP[NUM=?n] -> N[] * NNS[] {}
+|.......[>........| [7:8] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|......[-]........| [6:8] NP[NUM=?n] -> DT[] N[] *
+|......[-]........| [6:8] NPP[] -> DT[] N[NUM='sg'] *
+|.....[-->........| [5:8] PP[] -> IN[] DT[] N[NUM=?N] * T[] {?N: 'sg'}
+|.....[--]........| [5:8] NPP[] -> IN[] DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|.....[--]........| [5:8] PP[] -> NPP[] *
+|.....[-->........| [5:8] PP[] -> NPP[] * T[] {}
+Feature Single Edge Fundamental Rule:
+|..[-----]........| [2:8] PP[] -> AVP[] NPP[] *
+|...[----]........| [3:8] PP[] -> AVP[] NPP[] *
+Feature Bottom Up Predict Combine Rule:
+|...[----]........| [3:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|...[----]........| [3:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|..[-----]........| [2:8] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|..[----->........| [2:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|..[----->........| [2:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|..[-----]........| [2:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|..[-----]........| [2:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.[------]........| [1:8] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[-------]........| [0:8] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[------->........| [0:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[------->........| [0:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.....[--]........| [5:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.....[--]........| [5:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|..[-----]........| [2:8] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|..[----->........| [2:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|..[----->........| [2:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|......[-]........| [6:8] PP[] -> NPP[] *
+|......[->........| [6:8] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|......[-]........| [6:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|......[-]........| [6:8] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[->........| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|......[->........| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|......[->........| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|........[].......| [8:9] CC[] -> 'and' *
+Feature Bottom Up Predict Combine Rule:
+|........[>.......| [8:9] CONJ[] -> CC[] * S[] {}
+Feature Bottom Up Predict Combine Rule:
+|.........[]......| [9:10] PRN[NUM='sg'] -> 'vinny' *
+Feature Bottom Up Predict Combine Rule:
+|.........[]......| [9:10] NP[NUM=?n] -> PRN[NUM='sg'] *
+|.........[>......| [9:10] NPP[] -> PRN[NUM=?N] * N[NUM=?N] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|.........[>......| [9:10] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.........[>......| [9:10] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.........[>......| [9:10] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|..........[].....| [10:11] TV[NUM='sg', TENSE='past'] -> 'played' *
+Feature Bottom Up Predict Combine Rule:
+|..........[>.....| [10:11] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|..........[>.....| [10:11] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|...........[]....| [11:12] IN[] -> 'with' *
+Feature Bottom Up Predict Combine Rule:
+|...........[>....| [11:12] CMP[] -> IN[] * S[] {}
+|...........[>....| [11:12] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|...........[>....| [11:12] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|...........[>....| [11:12] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|............[]...| [12:13] CD[] -> 'three' *
+Feature Bottom Up Predict Combine Rule:
+|.............[]..| [13:14] ADJ[] -> 'other' *
+Feature Bottom Up Predict Combine Rule:
+|.............[>..| [13:14] AJP[] -> ADJ[] * N[NUM=?N] {}
+|.............[>..| [13:14] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|.............[>..| [13:14] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|..............[].| [14:15] N[NUM='pl'] -> 'dogs' *
+Feature Bottom Up Predict Combine Rule:
+|..............[>.| [14:15] NP[NUM=?n] -> N[] * NNS[] {}
+|..............[>.| [14:15] PP[] -> N[NUM=?N] * T[] {?N: 'pl'}
+Feature Single Edge Fundamental Rule:
+|.............[-].| [13:15] AJP[] -> ADJ[] N[NUM='pl'] *
+|.............[-].| [13:15] AVP[] -> ADJ[] N[NUM='pl'] *
+Feature Bottom Up Predict Combine Rule:
+|.............[-].| [13:15] P[] -> AVP[] *
+|.............[->.| [13:15] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|.............[-].| [13:15] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.............[-].| [13:15] P[] -> AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|.............[-].| [13:15] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|...............[]| [15:16] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|..............[-]| [14:16] PP[] -> N[NUM='pl'] T[] *
+Feature Bottom Up Predict Combine Rule:
+|..............[-]| [14:16] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|..............[-]| [14:16] VP[NUM=?n] -> P[] *
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: it was sunny today but might not be tomorrow.
+-------------------------------------------------------------------------------------------------------
+
+Leaf Init Rule:
+|[].........| [0:1] 'it'
+|.[]........| [1:2] 'was'
+|..[].......| [2:3] 'sunny'
+|...[]......| [3:4] 'today'
+|....[].....| [4:5] 'but'
+|.....[]....| [5:6] 'might'
+|......[]...| [6:7] 'not'
+|.......[]..| [7:8] 'be'
+|........[].| [8:9] 'tomorrow'
+|.........[]| [9:10] '.'
+Feature Bottom Up Predict Combine Rule:
+|[].........| [0:1] PRN[NUM='sg'] -> 'it' *
+Feature Bottom Up Predict Combine Rule:
+|[].........| [0:1] NP[NUM=?n] -> PRN[NUM='sg'] *
+|[>.........| [0:1] NPP[] -> PRN[NUM=?N] * N[NUM=?N] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[]........| [1:2] TV[NUM='sg', TENSE='past'] -> 'was' *
+Feature Bottom Up Predict Combine Rule:
+|.[>........| [1:2] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|.[>........| [1:2] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|..[].......| [2:3] ADJ[] -> 'sunny' *
+Feature Bottom Up Predict Combine Rule:
+|..[>.......| [2:3] AJP[] -> ADJ[] * N[NUM=?N] {}
+|..[>.......| [2:3] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|..[>.......| [2:3] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|...[]......| [3:4] N[NUM='sg'] -> 'today' *
+Feature Bottom Up Predict Combine Rule:
+|...[>......| [3:4] NP[NUM=?n] -> N[] * NNS[] {}
+|...[>......| [3:4] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|..[-]......| [2:4] AJP[] -> ADJ[] N[NUM='sg'] *
+|..[-]......| [2:4] AVP[] -> ADJ[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] P[] -> AVP[] *
+|..[->......| [2:4] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.[--]......| [1:4] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Single Edge Fundamental Rule:
+|[---]......| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[--->......| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[--->......| [0:4] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] P[] -> AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|..[-]......| [2:4] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.[--]......| [1:4] VP[NUM=?n] -> TV[NUM='sg'] P[] *
+Feature Bottom Up Predict Combine Rule:
+|....[].....| [4:5] CC[] -> 'but' *
+Feature Bottom Up Predict Combine Rule:
+|....[>.....| [4:5] CONJ[] -> CC[] * S[] {}
+Feature Bottom Up Predict Combine Rule:
+|.....[]....| [5:6] MD[] -> 'might' *
+Feature Bottom Up Predict Combine Rule:
+|.....[>....| [5:6] NP[NUM=?n] -> MD[] * RB[] {}
+Feature Bottom Up Predict Combine Rule:
+|......[]...| [6:7] RB[] -> 'not' *
+Feature Single Edge Fundamental Rule:
+|.....[-]...| [5:7] NP[NUM=?n] -> MD[] RB[] *
+Feature Bottom Up Predict Combine Rule:
+|.....[->...| [5:7] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.....[->...| [5:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.....[->...| [5:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.......[]..| [7:8] TV[NUM='pl', TENSE='pres'] -> 'be' *
+Feature Bottom Up Predict Combine Rule:
+|.......[>..| [7:8] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'pl'}
+|.......[>..| [7:8] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|........[].| [8:9] N[NUM='sg'] -> 'tomorrow' *
+Feature Bottom Up Predict Combine Rule:
+|........[>.| [8:9] NP[NUM=?n] -> N[] * NNS[] {}
+|........[>.| [8:9] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|.........[]| [9:10] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|........[-]| [8:10] PP[] -> N[NUM='sg'] T[] *
+Feature Bottom Up Predict Combine Rule:
+|........[-]| [8:10] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|........[-]| [8:10] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.......[--]| [7:10] VP[NUM=?n] -> TV[NUM='pl'] P[] *
+Feature Single Edge Fundamental Rule:
+|.....[----]| [5:10] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|.....[---->| [5:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|.....[---->| [5:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|....[-----]| [4:10] CONJ[] -> CC[] S[] *
+Feature Single Edge Fundamental Rule:
+|[=========]| [0:10] S[] -> NP[NUM=?n] VP[NUM=?n] CONJ[] *
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: there are 49 angels dancing on the head of this pin.
+-------------------------------------------------------------------------------------------------------
+
+Leaf Init Rule:
+|[]...........| [0:1] 'there'
+|.[]..........| [1:2] 'are'
+|..[].........| [2:3] '49'
+|...[]........| [3:4] 'angels'
+|....[].......| [4:5] 'dancing'
+|.....[]......| [5:6] 'on'
+|......[].....| [6:7] 'the'
+|.......[]....| [7:8] 'head'
+|........[]...| [8:9] 'of'
+|.........[]..| [9:10] 'this'
+|..........[].| [10:11] 'pin'
+|...........[]| [11:12] '.'
+Feature Bottom Up Predict Combine Rule:
+|[]...........| [0:1] DT[] -> 'there' *
+Feature Bottom Up Predict Combine Rule:
+|[]...........| [0:1] NP[NUM=?n] -> DT[] *
+|[>...........| [0:1] NP[NUM=?n] -> DT[] * N[] {}
+|[>...........| [0:1] NP[NUM=?n] -> DT[] * AJP[] {}
+|[>...........| [0:1] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|[>...........| [0:1] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|[>...........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[>...........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[>...........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[]..........| [1:2] TV[NUM='pl', TENSE='pres'] -> 'are' *
+Feature Bottom Up Predict Combine Rule:
+|.[>..........| [1:2] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'pl'}
+|.[>..........| [1:2] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|..[].........| [2:3] CD[] -> '49' *
+Feature Bottom Up Predict Combine Rule:
+|...[]........| [3:4] N[NUM='pl'] -> 'angels' *
+Feature Bottom Up Predict Combine Rule:
+|...[>........| [3:4] NP[NUM=?n] -> N[] * NNS[] {}
+|...[>........| [3:4] PP[] -> N[NUM=?N] * T[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|....[].......| [4:5] TV[NUM='pl', TENSE='pres'] -> 'dancing' *
+Feature Bottom Up Predict Combine Rule:
+|....[>.......| [4:5] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'pl'}
+|....[>.......| [4:5] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|.....[]......| [5:6] IN[] -> 'on' *
+Feature Bottom Up Predict Combine Rule:
+|.....[>......| [5:6] CMP[] -> IN[] * S[] {}
+|.....[>......| [5:6] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|.....[>......| [5:6] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|.....[>......| [5:6] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|......[].....| [6:7] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|......[].....| [6:7] NP[NUM=?n] -> DT[] *
+|......[>.....| [6:7] NP[NUM=?n] -> DT[] * N[] {}
+|......[>.....| [6:7] NP[NUM=?n] -> DT[] * AJP[] {}
+|......[>.....| [6:7] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|......[>.....| [6:7] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|.....[->.....| [5:7] PP[] -> IN[] DT[] * N[NUM=?N] T[] {}
+|.....[->.....| [5:7] NPP[] -> IN[] DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|......[>.....| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|......[>.....| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|......[>.....| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.......[]....| [7:8] N[NUM='sg'] -> 'head' *
+Feature Bottom Up Predict Combine Rule:
+|.......[>....| [7:8] NP[NUM=?n] -> N[] * NNS[] {}
+|.......[>....| [7:8] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|......[-]....| [6:8] NP[NUM=?n] -> DT[] N[] *
+|......[-]....| [6:8] NPP[] -> DT[] N[NUM='sg'] *
+|.....[-->....| [5:8] PP[] -> IN[] DT[] N[NUM=?N] * T[] {?N: 'sg'}
+|.....[--]....| [5:8] NPP[] -> IN[] DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|.....[--]....| [5:8] PP[] -> NPP[] *
+|.....[-->....| [5:8] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|.....[--]....| [5:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.....[--]....| [5:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|....[---]....| [4:8] VP[NUM=?n] -> TV[NUM='pl'] P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[-]....| [6:8] PP[] -> NPP[] *
+|......[->....| [6:8] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|......[-]....| [6:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|......[-]....| [6:8] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[->....| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|......[->....| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|......[->....| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|........[]...| [8:9] IN[] -> 'of' *
+Feature Bottom Up Predict Combine Rule:
+|........[>...| [8:9] CMP[] -> IN[] * S[] {}
+|........[>...| [8:9] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|........[>...| [8:9] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|........[>...| [8:9] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.........[]..| [9:10] DT[] -> 'this' *
+Feature Bottom Up Predict Combine Rule:
+|.........[]..| [9:10] NP[NUM=?n] -> DT[] *
+|.........[>..| [9:10] NP[NUM=?n] -> DT[] * N[] {}
+|.........[>..| [9:10] NP[NUM=?n] -> DT[] * AJP[] {}
+|.........[>..| [9:10] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|.........[>..| [9:10] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|........[->..| [8:10] PP[] -> IN[] DT[] * N[NUM=?N] T[] {}
+|........[->..| [8:10] NPP[] -> IN[] DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.........[>..| [9:10] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.........[>..| [9:10] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.........[>..| [9:10] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|..........[].| [10:11] N[NUM='sg'] -> 'pin' *
+Feature Bottom Up Predict Combine Rule:
+|..........[>.| [10:11] NP[NUM=?n] -> N[] * NNS[] {}
+|..........[>.| [10:11] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|.........[-].| [9:11] NP[NUM=?n] -> DT[] N[] *
+|.........[-].| [9:11] NPP[] -> DT[] N[NUM='sg'] *
+|........[-->.| [8:11] PP[] -> IN[] DT[] N[NUM=?N] * T[] {?N: 'sg'}
+|........[--].| [8:11] NPP[] -> IN[] DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|........[--].| [8:11] PP[] -> NPP[] *
+|........[-->.| [8:11] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|........[--].| [8:11] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|........[--].| [8:11] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|......[----].| [6:11] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|......[---->.| [6:11] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|......[---->.| [6:11] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|.....[-----].| [5:11] CMP[] -> IN[] S[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] PP[] -> NPP[] *
+|.........[->.| [9:11] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[->.| [9:11] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.........[->.| [9:11] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.........[->.| [9:11] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|...........[]| [11:12] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|..........[-]| [10:12] PP[] -> N[NUM='sg'] T[] *
+|........[---]| [8:12] PP[] -> IN[] DT[] N[NUM='sg'] T[] *
+|........[---]| [8:12] PP[] -> NPP[] T[] *
+|.........[--]| [9:12] PP[] -> NPP[] T[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[--]| [9:12] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[--]| [9:12] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|........[---]| [8:12] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|........[---]| [8:12] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|......[-----]| [6:12] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|......[----->| [6:12] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|......[----->| [6:12] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|.....[------]| [5:12] CMP[] -> IN[] S[] *
+Feature Bottom Up Predict Combine Rule:
+|........[---]| [8:12] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|..........[-]| [10:12] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|..........[-]| [10:12] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.........[--]| [9:12] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|.........[-->| [9:12] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|.........[-->| [9:12] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|........[---]| [8:12] CMP[] -> IN[] S[] *
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: the black dogs are playing with the elf toy.
+-------------------------------------------------------------------------------------------------------
+
+Leaf Init Rule:
+|[].........| [0:1] 'the'
+|.[]........| [1:2] 'black'
+|..[].......| [2:3] 'dogs'
+|...[]......| [3:4] 'are'
+|....[].....| [4:5] 'playing'
+|.....[]....| [5:6] 'with'
+|......[]...| [6:7] 'the'
+|.......[]..| [7:8] 'elf'
+|........[].| [8:9] 'toy'
+|.........[]| [9:10] '.'
+Feature Bottom Up Predict Combine Rule:
+|[].........| [0:1] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|[].........| [0:1] NP[NUM=?n] -> DT[] *
+|[>.........| [0:1] NP[NUM=?n] -> DT[] * N[] {}
+|[>.........| [0:1] NP[NUM=?n] -> DT[] * AJP[] {}
+|[>.........| [0:1] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|[>.........| [0:1] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[>.........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[]........| [1:2] ADJ[] -> 'black' *
+Feature Bottom Up Predict Combine Rule:
+|.[>........| [1:2] AJP[] -> ADJ[] * N[NUM=?N] {}
+|.[>........| [1:2] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|.[>........| [1:2] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|[->........| [0:2] AVP[] -> DT[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|..[].......| [2:3] N[NUM='pl'] -> 'dogs' *
+Feature Bottom Up Predict Combine Rule:
+|..[>.......| [2:3] NP[NUM=?n] -> N[] * NNS[] {}
+|..[>.......| [2:3] PP[] -> N[NUM=?N] * T[] {?N: 'pl'}
+Feature Single Edge Fundamental Rule:
+|.[-].......| [1:3] AJP[] -> ADJ[] N[NUM='pl'] *
+|.[-].......| [1:3] AVP[] -> ADJ[] N[NUM='pl'] *
+|[--].......| [0:3] AVP[] -> DT[] ADJ[] N[NUM='pl'] *
+Feature Bottom Up Predict Combine Rule:
+|[--].......| [0:3] P[] -> AVP[] *
+|[-->.......| [0:3] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|[--].......| [0:3] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.[-].......| [1:3] P[] -> AVP[] *
+|.[->.......| [1:3] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|.[-].......| [1:3] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|[--].......| [0:3] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[-->.......| [0:3] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[-->.......| [0:3] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[-].......| [1:3] P[] -> AJP[] *
+Feature Single Edge Fundamental Rule:
+|[--].......| [0:3] NP[NUM=?n] -> DT[] AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|[-->.......| [0:3] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[-->.......| [0:3] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[-->.......| [0:3] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[-].......| [1:3] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|...[]......| [3:4] TV[NUM='pl', TENSE='pres'] -> 'are' *
+Feature Bottom Up Predict Combine Rule:
+|...[>......| [3:4] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'pl'}
+|...[>......| [3:4] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|....[].....| [4:5] TV[NUM='pl', TENSE='pres'] -> 'playing' *
+Feature Bottom Up Predict Combine Rule:
+|....[>.....| [4:5] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'pl'}
+|....[>.....| [4:5] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|.....[]....| [5:6] IN[] -> 'with' *
+Feature Bottom Up Predict Combine Rule:
+|.....[>....| [5:6] CMP[] -> IN[] * S[] {}
+|.....[>....| [5:6] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|.....[>....| [5:6] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|.....[>....| [5:6] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|......[]...| [6:7] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|......[]...| [6:7] NP[NUM=?n] -> DT[] *
+|......[>...| [6:7] NP[NUM=?n] -> DT[] * N[] {}
+|......[>...| [6:7] NP[NUM=?n] -> DT[] * AJP[] {}
+|......[>...| [6:7] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|......[>...| [6:7] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|.....[->...| [5:7] PP[] -> IN[] DT[] * N[NUM=?N] T[] {}
+|.....[->...| [5:7] NPP[] -> IN[] DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|......[>...| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|......[>...| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|......[>...| [6:7] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.......[]..| [7:8] N[NUM='sg'] -> 'elf' *
+Feature Bottom Up Predict Combine Rule:
+|.......[>..| [7:8] NP[NUM=?n] -> N[] * NNS[] {}
+|.......[>..| [7:8] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|......[-]..| [6:8] NP[NUM=?n] -> DT[] N[] *
+|......[-]..| [6:8] NPP[] -> DT[] N[NUM='sg'] *
+|.....[-->..| [5:8] PP[] -> IN[] DT[] N[NUM=?N] * T[] {?N: 'sg'}
+|.....[--]..| [5:8] NPP[] -> IN[] DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|.....[--]..| [5:8] PP[] -> NPP[] *
+|.....[-->..| [5:8] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|.....[--]..| [5:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.....[--]..| [5:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|....[---]..| [4:8] VP[NUM=?n] -> TV[NUM='pl'] P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[-]..| [6:8] PP[] -> NPP[] *
+|......[->..| [6:8] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|......[-]..| [6:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|......[-]..| [6:8] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|......[->..| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|......[->..| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|......[->..| [6:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|........[].| [8:9] N[NUM='sg'] -> 'toy' *
+Feature Bottom Up Predict Combine Rule:
+|........[>.| [8:9] NP[NUM=?n] -> N[] * NNS[] {}
+|........[>.| [8:9] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|.........[]| [9:10] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|........[-]| [8:10] PP[] -> N[NUM='sg'] T[] *
+Feature Bottom Up Predict Combine Rule:
+|........[-]| [8:10] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|........[-]| [8:10] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|......[---]| [6:10] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|......[--->| [6:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|......[--->| [6:10] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|.....[----]| [5:10] CMP[] -> IN[] S[] *
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: the yellow dog slept in my pajamas.
+-------------------------------------------------------------------------------------------------------
+|.t.y.d.s.i.m.p...|
+Leaf Init Rule:
+|[-] . . . . . . .| [0:1] 'the'
+|. [-] . . . . . .| [1:2] 'yellow'
+|. . [-] . . . . .| [2:3] 'dog'
+|. . . [-] . . . .| [3:4] 'slept'
+|. . . . [-] . . .| [4:5] 'in'
+|. . . . . [-] . .| [5:6] 'my'
+|. . . . . . [-] .| [6:7] 'pajamas'
+|. . . . . . . [-]| [7:8] '.'
+Feature Bottom Up Predict Combine Rule:
+|[-] . . . . . . .| [0:1] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|[-] . . . . . . .| [0:1] NP[NUM=?n] -> DT[] *
+|[-> . . . . . . .| [0:1] NP[NUM=?n] -> DT[] * N[] {}
+|[-> . . . . . . .| [0:1] NP[NUM=?n] -> DT[] * AJP[] {}
+|[-> . . . . . . .| [0:1] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|[-> . . . . . . .| [0:1] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|[-> . . . . . . .| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[-> . . . . . . .| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[-> . . . . . . .| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. [-] . . . . . .| [1:2] ADJ[] -> 'yellow' *
+Feature Bottom Up Predict Combine Rule:
+|. [-> . . . . . .| [1:2] AJP[] -> ADJ[] * N[NUM=?N] {}
+|. [-> . . . . . .| [1:2] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|. [-> . . . . . .| [1:2] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|[---> . . . . . .| [0:2] AVP[] -> DT[] ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|. . [-] . . . . .| [2:3] N[NUM='sg'] -> 'dog' *
+Feature Bottom Up Predict Combine Rule:
+|. . [-> . . . . .| [2:3] NP[NUM=?n] -> N[] * NNS[] {}
+|. . [-> . . . . .| [2:3] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|. [---] . . . . .| [1:3] AJP[] -> ADJ[] N[NUM='sg'] *
+|. [---] . . . . .| [1:3] AVP[] -> ADJ[] N[NUM='sg'] *
+|[-----] . . . . .| [0:3] AVP[] -> DT[] ADJ[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|[-----] . . . . .| [0:3] P[] -> AVP[] *
+|[-----> . . . . .| [0:3] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|[-----] . . . . .| [0:3] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|. [---] . . . . .| [1:3] P[] -> AVP[] *
+|. [---> . . . . .| [1:3] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|. [---] . . . . .| [1:3] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|[-----] . . . . .| [0:3] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|[-----> . . . . .| [0:3] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|[-----> . . . . .| [0:3] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. [---] . . . . .| [1:3] P[] -> AJP[] *
+Feature Single Edge Fundamental Rule:
+|[-----] . . . . .| [0:3] NP[NUM=?n] -> DT[] AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|[-----> . . . . .| [0:3] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[-----> . . . . .| [0:3] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[-----> . . . . .| [0:3] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. [---] . . . . .| [1:3] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . [-] . . . .| [3:4] TV[NUM='sg', TENSE='past'] -> 'slept' *
+Feature Bottom Up Predict Combine Rule:
+|. . . [-> . . . .| [3:4] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'sg'}
+|. . . [-> . . . .| [3:4] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|. . . . [-] . . .| [4:5] IN[] -> 'in' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . [-> . . .| [4:5] CMP[] -> IN[] * S[] {}
+|. . . . [-> . . .| [4:5] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|. . . . [-> . . .| [4:5] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|. . . . [-> . . .| [4:5] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-] . .| [5:6] PRN[NUM='sg'] -> 'my' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-] . .| [5:6] NP[NUM=?n] -> PRN[NUM='sg'] *
+|. . . . . [-> . .| [5:6] NPP[] -> PRN[NUM=?N] * N[NUM=?N] {?N: 'sg'}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . [-> . .| [5:6] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|. . . . . [-> . .| [5:6] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|. . . . . [-> . .| [5:6] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [-] .| [6:7] N[NUM='pl'] -> 'pajamas' *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [-> .| [6:7] NP[NUM=?n] -> N[] * NNS[] {}
+|. . . . . . [-> .| [6:7] PP[] -> N[NUM=?N] * T[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . . [-]| [7:8] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|. . . . . . [---]| [6:8] PP[] -> N[NUM='pl'] T[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [---]| [6:8] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|. . . . . . [---]| [6:8] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|. . . . . [-----]| [5:8] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|. . . . . [----->| [5:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|. . . . . [----->| [5:8] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|. . . . [-------]| [4:8] CMP[] -> IN[] S[] *
+
+
+
+done!
+-------------------------------------------------------------------------------------------------------
+printing sentence: we will take two long rides in the country next week.
+-------------------------------------------------------------------------------------------------------
+
+Leaf Init Rule:
+|[]...........| [0:1] 'we'
+|.[]..........| [1:2] 'will'
+|..[].........| [2:3] 'take'
+|...[]........| [3:4] 'two'
+|....[].......| [4:5] 'long'
+|.....[]......| [5:6] 'rides'
+|......[].....| [6:7] 'in'
+|.......[]....| [7:8] 'the'
+|........[]...| [8:9] 'country'
+|.........[]..| [9:10] 'next'
+|..........[].| [10:11] 'week'
+|...........[]| [11:12] '.'
+Feature Bottom Up Predict Combine Rule:
+|[]...........| [0:1] PRN[NUM='pl'] -> 'we' *
+Feature Bottom Up Predict Combine Rule:
+|[]...........| [0:1] NP[NUM=?n] -> PRN[NUM='pl'] *
+|[>...........| [0:1] NPP[] -> PRN[NUM=?N] * N[NUM=?N] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|[>...........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|[>...........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|[>...........| [0:1] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.[]..........| [1:2] MD[] -> 'will' *
+Feature Bottom Up Predict Combine Rule:
+|.[>..........| [1:2] NP[NUM=?n] -> MD[] * RB[] {}
+Feature Bottom Up Predict Combine Rule:
+|..[].........| [2:3] TV[NUM='pl', TENSE='pres'] -> 'take' *
+Feature Bottom Up Predict Combine Rule:
+|..[>.........| [2:3] VP[NUM=?n] -> TV[NUM=?N] * P[] {?N: 'pl'}
+|..[>.........| [2:3] AVP[] -> TV[NUM=?N] * ADV[] PP[] {?N: 'pl'}
+Feature Bottom Up Predict Combine Rule:
+|...[]........| [3:4] CD[] -> 'two' *
+Feature Bottom Up Predict Combine Rule:
+|....[].......| [4:5] ADJ[] -> 'long' *
+Feature Bottom Up Predict Combine Rule:
+|....[>.......| [4:5] AJP[] -> ADJ[] * N[NUM=?N] {}
+|....[>.......| [4:5] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|....[>.......| [4:5] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.....[]......| [5:6] NNS[] -> 'rides' *
+Feature Bottom Up Predict Combine Rule:
+|......[].....| [6:7] IN[] -> 'in' *
+Feature Bottom Up Predict Combine Rule:
+|......[>.....| [6:7] CMP[] -> IN[] * S[] {}
+|......[>.....| [6:7] PP[] -> IN[] * DT[] N[NUM=?N] T[] {}
+|......[>.....| [6:7] NPP[] -> IN[] * NUM[] ADJ[] N[NUM=?N] {}
+|......[>.....| [6:7] NPP[] -> IN[] * DT[] N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.......[]....| [7:8] DT[] -> 'the' *
+Feature Bottom Up Predict Combine Rule:
+|.......[]....| [7:8] NP[NUM=?n] -> DT[] *
+|.......[>....| [7:8] NP[NUM=?n] -> DT[] * N[] {}
+|.......[>....| [7:8] NP[NUM=?n] -> DT[] * AJP[] {}
+|.......[>....| [7:8] AVP[] -> DT[] * ADJ[] N[NUM=?N] {}
+|.......[>....| [7:8] NPP[] -> DT[] * N[NUM=?N] {}
+Feature Single Edge Fundamental Rule:
+|......[->....| [6:8] PP[] -> IN[] DT[] * N[NUM=?N] T[] {}
+|......[->....| [6:8] NPP[] -> IN[] DT[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|.......[>....| [7:8] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.......[>....| [7:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.......[>....| [7:8] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|........[]...| [8:9] N[NUM='sg'] -> 'country' *
+Feature Bottom Up Predict Combine Rule:
+|........[>...| [8:9] NP[NUM=?n] -> N[] * NNS[] {}
+|........[>...| [8:9] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|.......[-]...| [7:9] NP[NUM=?n] -> DT[] N[] *
+|.......[-]...| [7:9] NPP[] -> DT[] N[NUM='sg'] *
+|......[-->...| [6:9] PP[] -> IN[] DT[] N[NUM=?N] * T[] {?N: 'sg'}
+|......[--]...| [6:9] NPP[] -> IN[] DT[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|......[--]...| [6:9] PP[] -> NPP[] *
+|......[-->...| [6:9] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|......[--]...| [6:9] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|......[--]...| [6:9] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[-]...| [7:9] PP[] -> NPP[] *
+|.......[->...| [7:9] PP[] -> NPP[] * T[] {}
+Feature Bottom Up Predict Combine Rule:
+|.......[-]...| [7:9] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[-]...| [7:9] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|.......[->...| [7:9] S[] -> NP[NUM=?n] * VP[NUM=?n] {?n2: Variable('?n')}
+|.......[->...| [7:9] S[] -> NP[NUM=?n] * VP[NUM=?n] CONJ[] {?n3: Variable('?n')}
+|.......[->...| [7:9] S[] -> NP[NUM=?n] * VP[NUM=?n] CMP[] {?n2: Variable('?n')}
+Feature Bottom Up Predict Combine Rule:
+|.........[]..| [9:10] ADJ[] -> 'next' *
+Feature Bottom Up Predict Combine Rule:
+|.........[>..| [9:10] AJP[] -> ADJ[] * N[NUM=?N] {}
+|.........[>..| [9:10] AJP[] -> ADJ[] * ADJ[] N[NUM=?N] {}
+|.........[>..| [9:10] AVP[] -> ADJ[] * N[NUM=?N] {}
+Feature Bottom Up Predict Combine Rule:
+|..........[].| [10:11] N[NUM='sg'] -> 'week' *
+Feature Bottom Up Predict Combine Rule:
+|..........[>.| [10:11] NP[NUM=?n] -> N[] * NNS[] {}
+|..........[>.| [10:11] PP[] -> N[NUM=?N] * T[] {?N: 'sg'}
+Feature Single Edge Fundamental Rule:
+|.........[-].| [9:11] AJP[] -> ADJ[] N[NUM='sg'] *
+|.........[-].| [9:11] AVP[] -> ADJ[] N[NUM='sg'] *
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] P[] -> AVP[] *
+|.........[->.| [9:11] PP[] -> AVP[] * NPP[] {}
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] VP[NUM=?n] -> P[] *
+Feature Single Edge Fundamental Rule:
+|.......[---].| [7:11] S[] -> NP[NUM=?n] VP[NUM=?n] *
+|.......[--->.| [7:11] S[] -> NP[NUM=?n] VP[NUM=?n] * CONJ[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+|.......[--->.| [7:11] S[] -> NP[NUM=?n] VP[NUM=?n] * CMP[] {?n2: Variable('?n'), ?n3: Variable('?n')}
+Feature Single Edge Fundamental Rule:
+|......[----].| [6:11] CMP[] -> IN[] S[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] P[] -> AJP[] *
+Feature Bottom Up Predict Combine Rule:
+|.........[-].| [9:11] VP[NUM=?n] -> P[] *
+Feature Bottom Up Predict Combine Rule:
+|...........[]| [11:12] T[] -> '.' *
+Feature Single Edge Fundamental Rule:
+|..........[-]| [10:12] PP[] -> N[NUM='sg'] T[] *
+Feature Bottom Up Predict Combine Rule:
+|..........[-]| [10:12] P[] -> PP[] *
+Feature Bottom Up Predict Combine Rule:
+|..........[-]| [10:12] VP[NUM=?n] -> P[] *
+
+
+
+done!
+#+end_example
+
+
+
+Analysis and Comments:
+Upon first glance, the sentences 1-9 appear to be correctly parsed, so we agree with result. Several sentences, such as
+sentence 4, certainly showed Chris' original intuition that the subdivision of the phrases can support its own during
+the parse, where the parser appeared to use 'Feature Bottom Up Predict Combine Rule' a few times which was fascinating.
+What's also interesting is that the parser appeared to agree with our manual parsing on paper similar to [[example-tree-sentences]].
+
+As you can see in [[q11.cfg]] (as well as in the included cfg file, we changed our answer from question 9 in order to extend the
+grammar for question 11. Likewise, Rishi and I debated on the minimum amount of changes required for 'plural' vice 'singular'
+entities, as well as the tenses for verb phrases. In this case, we did not think there were too many infinitives to begin with
+(so that's what it means...) and we considered most of our verbs to be 'transitive' in nature as described by many in Google.
+Chris decided to keep the grammar rules as simple as possible mostly due to the limited time, but also mostly due to English
+being the secondary language for Chris and Rishi. I think you'll see the progression and the learning process in grammar rules
+for both as we work the homework.
+
+In the interest of time, we decided not to change the answers in questions 6-9 since the abstraction of the phrases in those
+rules appear to be valid. You likely observed that we changed the POS for a few lexical terms, such as 'downstairs' from 'LOC' to
+NNS, which is what the tokenizer suggests.
+
+You'll likely recall the Zoom conversation on Friday (20 October) with Chris about word capitalization and punctuation. We decided 
+to continue on the path of not downcasing, as we've done throughout the homework, because the context and therefore POS of certain
+words will change depending on its capitalization. Andrei called it a specific term in English, but a study in English can take a
+lifetime (particularly for 'demonstrable phrases' where pronouns become faclitate abstraction). Nevertheless, we will stick with
+our answers and preserve the captilalization to preserve context and intended POS. 
+
+
+12. [@12] <<fopc>> [[../../reading/blk_2nd_ed.pdf][Chapter 10 of BLK]] and [[http://www.nltk.org/howto/semantics.html][the semantics howto]] march one through the basics
+   of applying the FOPC and the \lambda calculus to reifying the semantics of
+   context-free sentences.  One of the practical difficulties in this
+   approach is ensuring that the implementation of the universe of
+   discourse (they call it the /domain of discourse/, same thing) actually
+   covers the intended universe.
+
+   To see this, let's use their =sem2.fcfg= grammar to parse the following
+   sentences syntactically and semantically, and output the reification of
+   the sentences into the FOPC and the \lambda calculus.  
+
+   (HINT: be sure to 
+   #+begin_src python :results output
+   from nltk.sem import *
+   #+end_src
+   so you get all the parts and save yourself frustration!)
+
+   For each of the following sentences, parse them and print the sentence,
+   its parse, and its semantics; and then explain the results you get and
+   exactly how you would fix the problems encountered.
+
+      + Suzie sees Noosa.
+      + Fido barks.
+      + Tess barks.
+
+#+begin_src python :results output
+from nltk.sem import interpret_sents
+
+# Define the grammar file
+gramfile = 'grammars/sample_grammars/sem2.fcfg'
+
+# List of sentences to interpret
+sents = ['Suzie sees Noosa', 'Fido barks', 'Tess barks']
+
+# Function to interpret sentences and print results
+def interpret_and_print(sentences, grammar_file):
+    for sent in sentences:
+        try:
+            # Interpret the sentence
+            results = interpret_sents([sent], grammar_file)
+            for (synrep, semrep) in results[0]:
+                print('\n\nSentence: {} \nParse: {} \nSemantics: {}'.format(sent, synrep, semrep))
+        except Exception as e:
+            print('\n\nERROR!!!')
+            print('Sentence: {} \nParse: [Exception] {} \nSemantics: [Exception] {}'.format(sent, str(e), str(e)))
+ 
+
+# Interpret and print the sentences
+interpret_and_print(sents, gramfile)
+
+#+end_src
+
+#+RESULTS:
+#+begin_example
+
+
+Sentence: Suzie sees Noosa 
+Parse: (S[SEM=<see(suzie,noosa)>]
+  (NP[-LOC, NUM='sg', SEM=<\P.P(suzie)>]
+    (PropN[-LOC, NUM='sg', SEM=<\P.P(suzie)>] Suzie))
+  (VP[NUM='sg', SEM=<\y.see(y,noosa)>]
+    (TV[NUM='sg', SEM=<\X y.X(\x.see(y,x))>, TNS='pres'] sees)
+    (NP[+LOC, NUM='sg', SEM=<\P.P(noosa)>]
+      (PropN[+LOC, NUM='sg', SEM=<\P.P(noosa)>] Noosa)))) 
+Semantics: see(suzie,noosa)
+
+
+Sentence: Fido barks 
+Parse: (S[SEM=<bark(fido)>]
+  (NP[-LOC, NUM='sg', SEM=<\P.P(fido)>]
+    (PropN[-LOC, NUM='sg', SEM=<\P.P(fido)>] Fido))
+  (VP[NUM='sg', SEM=<\x.bark(x)>]
+    (IV[NUM='sg', SEM=<\x.bark(x)>, TNS='pres'] barks))) 
+Semantics: bark(fido)
+
+
+ERROR!!!
+Sentence: Tess barks 
+Parse: [Exception] Grammar does not cover some of the input words: "'Tess'". 
+Semantics: [Exception] Grammar does not cover some of the input words: "'Tess'".
+#+end_example
+
+
+
+
+
+Analysis and Comments:
+In the first sentence “Suzie sees Noosa” we have a binary predicate “sees”
+that takes inputs of Suzie and Noosa, so we get the semantics “see(suzie, noosa)”.
+
+In the second sentence, we have a unary predicate “barks” with Fido as the input, hence “bark(fido)”
+
+The third sentence fails to parse because “Tess” is not in the domain and
+thus is not recognized as a non-logical constant, which is why we do not
+receive a parse. To fix this, we must simply add “Tess” into the domain of
+discourse.
+
+Per instruction on the question, we displayed the semantics and parsed sentences
+into it FOPC components.
+
+
+
+
+
+
+* Grading Scale
+
+This homework is worth 15 points.  The grading
+scale is:
+
+| fraction correctly reviewed and answered | points awarded |
+|------------------------------------------+----------------|
+| \(\ge 0.95\)                             |             15 |
+| 0.90 -- 0.94                             |             14 |
+| 0.85 -- 0.89                             |             13 |
+| 0.80 -- 0.94                             |             12 |
+| 0.75 -- 0.79                             |             11 |
+| 0.70 -- 0.74                             |             10 |
+| 0.65 -- 0.69                             |              9 |
+| 0.60 -- 0.64                             |              8 |
+| 0.55 -- 0.59                             |              7 |
+| 0.50 -- 0.54                             |              6 |
+| 0.45 -- 0.49                             |              5 |
+| 0.40 -- 0.44                             |              4 |
+| 0.35 -- 0.39                             |              3 |
+| 0.30 -- 0.34                             |              2 |
+| 0.25 -- 0.29                             |              1 |
+| \(< 0.25\)                               |              0 |
+
+
+
+
+* Scoring
+
+
+|     question | max pts | answer ok? |
+|--------------+---------+------------|
+|            1 |       1 |            |
+|            2 |       1 |            |
+|            3 |       1 |            |
+|            4 |       1 |            |
+|            5 |       1 |            |
+|            6 |       2 |            |
+|            7 |       1 |            |
+|            8 |       1 |            |
+|            9 |       1 |            |
+|           10 |       1 |            |
+|           11 |       2 |            |
+|           12 |       2 |            |
+|--------------+---------+------------|
+|  total score |      15 |          0 |
+|   percentage |         |          0 |
+| total points |         |            |
+#+TBLFM: @14$2=vsum(@I..@II)::@14$3=vsum(@I..@II)::@15$3=@-1/@-2$-1
+
+
+
+
