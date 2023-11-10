@@ -1,0 +1,327 @@
+#+title: Homework 3:  Machine Learning for Language Understanding
+#+author: Toni Kazic
+#+date: Fall, 2023
+
+# <2021-11-16 Tue>
+
+
+#+SETUPFILE: "../../../common/preamble.org"
+#+LATEX_CLASS: article
+#+OPTIONS: toc:nil
+#+OPTIONS: ^:nil
+
+#+LATEX_HEADER: \usepackage{langsci-avm}
+# http://ftp.math.purdue.edu/mirrors/ctan.org/macros/latex/contrib/langsci-avm/langsci-avm.pdf
+
+#+LATEX_HEADER: \newcommand{\grmr}[2]{\ensuremath{\mathrm{#1} & \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\txtgrmr}[2]{\ensuremath{\mathrm{#1} \,\longrightarrow\, \mathrm{#2}}}
+#+LATEX_HEADER: \newcommand{\grmrhs}[1]{\ensuremath{& \,\longrightarrow\, \mathrm{#1} }}
+#+LATEX_HEADER: \newcommand{\wa}[1]{\type{\textnormal{\w{#1}}}}
+
+# compile with pdflatex
+#
+# Kazic, 3.11.2020
+
+
+
+* DONE Introduction
+
+This homework explores the course objective of understanding and
+generating machine learning approaches, taking us into (shallow) machine
+learning for language understanding. This will give us a chance to consider
+the problem of usefully embedding language in numerically defined spaces,
+giving us a chance to compare a seat-of-the-pants approach to the more
+sophisticated ones we discussed in class.  It also gives us an opportunity
+to compare different classifiers for different corpora and get an idea of
+how well they perform.
+
+
+NLTK has some classifiers, but [[http://scikit-learn.org/stable/user_guide.html][scikit-learn]] has more (so be sure to install
+any needed modules!).  Let's jump off the deep end together and see how
+far we can get.
+
+
+
+# We'll revisit the feature extraction problem in the future, so
+# this homework explores how well guessed features perform.
+
+# At the end we look briefly at checking coherence using bags of
+# words (see [[http://www.nltk.org/book/ch06.html][Section 2.3 ff]] for a short discussion and examples).  This is
+# one technique for recognizing textual entailment.
+
+
+
+
+* DONE Who's Who and Solution Patterns
+<<whoswho>>
+
+
+
+** Group Members
+
+| first name last name | color                         |
+|----------------------+-------------------------------|
+| Eric                 | green \color{green}\rule{5mm}{3mm} |
+| Polycarp             | yellow \color{yellow}\rule{5mm}{3mm} |
+| Santhosh             | purple \color{violet}\rule{5mm}{3mm} |
+
+
+
+** *Special Instructions for this Homework!*
+
+All group members are to work on problem 6 together.  I want you to have
+enough scope to play around with the embeddings and clustering algorithms.
+
+
+
+** Two Member Solution Patterns
+
+| color                         | draft solution | revise solution |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | odds           | evens           |
+| yellow \color{yellow}\rule{5mm}{3mm} | evens          | odds            |
+
+
+** Three Member Solution Patterns
+
+$i$ is the question number.
+
+#+begin_center
+#+ATTR_LaTeX: :mode inline-math :environment array
+| \text{color}                  | \text{draft solution} | \text{revise solution} |
+|-------------------------------+----------------+-----------------|
+| green \color{green}\rule{5mm}{3mm} | i \mod 3 = 1   | i \mod 3 = 0    |
+| yellow \color{yellow}\rule{5mm}{3mm} | i \mod 3 = 2   | i \mod 3 = 1    |
+| purple \color{violet}\rule{5mm}{3mm} | i \mod 3 = 0   | i \mod 3 = 2    |
+#+end_center
+
+
+* DONE General Instructions
+  + /Fill out the group members table and follow the solution patterns/ in
+     Section [[whoswho]].
+
+   + /If the question is unclear, tell me your interpretation of it as part
+     of your answer./  Feel free to ask about the questions in class or on
+     the Slack channel (use =@channel= as others will probably be puzzled
+     too). 
+
+   + /For questions using corpora, use the corpus of the lead person./
+
+   + /Put your draft answers right after each question using a *complete,
+     functional* =org= mode code or example block./ Make sure your code
+     block is complete and functional by testing it in your copy of this
+     homework file.
+
+   + /Each group member reviews the others' draft solutions and you revise them together/.
+
+   + /Discuss each other's draft and reviews, finalizing the answers./
+
+   + /Show all your work: code, results, and analysis./  Does your code
+     work in this file and produce *exactly* the results you show? 
+
+   + /Post the completed file to Canvas no later than noon on the Tuesday
+     indicated/ in the [[../syllabus.org::schedule][schedule in the syllabus]], naming your file with each
+     person's first name (no spaces in the file name, and don't forget the
+     =.org= extension!).  Only one person should submit the final file.
+
+
+* DONE Hints
+
+** use scikit-learn/sklearn for the ML parts rather than NLTK
+  
+
+** joblib.dump() and joblib.load()
+
+Note that for big data, the [[http://scikit-learn.org/stable/tutorial/basic/tutorial.html][scikit-learn tutorial]] suggests using
+joblib.dump() and joblib.load().  However this only writes to disk, not a
+string, but can store models and classifiers.
+
+
+** I expect you to bring questions and struggles with problems 4 and 5 to class!
+
+
+** You may need to reformat the data generated by NLTK for the [[http://scikit-learn.org/stable/modules/feature_extraction.html][scikit-learn code]].
+
+
+** You may need to cope with [[http://scikit-learn.org/stable/auto_examples/text/document_classification_20newsgroups.html#sphx-glr-auto-examples-text-document-classification-20newsgroups-py][sparse data]] in scikit-learn.
+
+One reason to use the universal tagset is that it doesn't have very many
+tags, but depending on your corpus, your suffixes may have more than is
+really desirable for problem 4.
+
+
+
+
+* DONE Questions
+
+# specify POS tags in f23!  I mean these throughout
+
+1. [@1] <<tagging>> Randomly select 1000 POS-tagged words from your assigned
+   category/corpus and form your training and testing sets so that you
+   train on 90% of the words and test on 10%.  Save these somehow so you
+   can re-use them in the [[fea-set][next]] problem. Use the universal POS tagset. *If your
+   corpus isn't tagged, choose a tagged corpus.* Using a tagger to tag it
+   won't help much as it doesn't make a gold standard (that requires
+   hand-checking by expert grammarians).
+#+begin_src python :output results
+import nltk
+
+
+
+
+
+
+
+
+
+
+
+
+#+end_src
+
+
+2.  [@2] <<fea-set>> For each of tuples in your training set in problem
+   [[tagging]], extract the last *three letters for the word* and its entire tag,
+   and compile these into an NLTK feature set.  Check to see if the same
+   feature is mapped to more than one tag and if so, then retag that
+   feature with 'X'.  Again, save the feature set for reuse as a file, at
+   minimum as a dictionary.  *Do the same for the test set.*
+
+
+3.  [@3] <<bayesian>> Now train a naive Bayes classifier using the one in
+   NLTK or scikit-learn on your saved [[fea-set][feature set]] and show its accuracy.
+   Show the ten most informative features (for sure you can get this from
+   the NLTK naive Bayes classifier).
+
+
+4. [@4] <<lda>> Continuing with the Bayesian theme of problem [[bayesian]],
+   let's try some [[http://scikit-learn.org/stable/modules/generated/sklearn.discriminant_analysis.LinearDiscriminantAnalysis.html#sklearn.discriminant_analysis.LinearDiscriminantAnalysis][linear discriminant analysis]] with the algorithm found in
+   *scikit-learn*, using the tags as the labels we want to learn.  Again, the
+   question we're asking is how well do the three-letter suffixes predict
+   the tags, so this is a multiclass LDA problem; the example on the man
+   page shows a two-class problem.  We'll use the default =svd= method with
+   no shrinkage, both because it's a good place to start and because it may
+   be able to cope with the size of our tag and feature sets.  Return the
+   output of the decision_function and score functions after training and
+   testing the classifier.  Compute the LDA with and without downcasing and
+   compare and discuss the results.
+
+   
+
+
+# rewrite to clarify:
+#
+# two draws w/o replacement of anchors and successors; compare
+# permute
+# re-draw same anchors with new successors, and then compare all four
+
+
+
+5. [@5] <<bow>> One feature that might be helpful in distinguishing
+   machine-generated texts is repetition from sentence to sentence.  Let's
+   explore that hypothesis informally.  One way we can approach that
+   problem by comparing significant words (that is, non-stop words) between
+   each sentence and its successor sentence in a corpus.  We'll use the
+   Brown corpus, category news, for this problem.  Go ahead and downcase
+   unless you want to explain why you don't think it's a good idea.
+
+    For 700 randomly selected sentences in the Brown news corpus (the
+   ``first anchor sentences''), and their immediately succeeding sentences
+   (''first set of successors''), form bags of the significant words for
+   each pair of sentences (so really, these are paired data) and then
+   compute the intersection between each pair of bags (so, 700 intersecting
+   bags of words).  This is the baseline comparison.
+
+   Tabulate these and compare the results to another randomly drawn 700
+   sentences (''second anchor sentences''), ensuring that there are no
+   duplicates between the first anchor sentences and the second anchor
+   sentences and their successors (sampling without replacement).  Permute
+   all sentences in the corpus, then draw the same second anchor sentences
+   and their new successors and repeat computing the intersecting bags of
+   significant words.   So you'll have three intersecting bags of
+   significant words:
+      + first anchor and their successors (overall baseline)
+      + second anchor and their successors, ensuring that intersection of
+        first and second anchors is empty (control for second anchors BOWs)
+      + second anchor and new successors after permutation (the experiment).
+
+
+   Compare and discuss the results.  You may use methods from NLTK,
+   scikit-learn, or both for this problem: just be sure your code block is
+   complete and self-contained.
+
+
+6.  [@6] <<ml>> Choose 500 random sentences from the Brown news corpus
+   tagged with the universal tagset.  For each sentence, identify the nouns
+   and then compile a list of the three tags immediately preceeding each
+   noun (excluding chunks smaller than three).  Then encode each chunk in
+   the list as a ternary tuple, mapping the tags to integers, and save the
+   list of mapped tuples to disk using either pickle or json, as you wish.
+   Go ahead and downcase unless you want to explain why you don't think
+   it's a good idea.
+
+
+    Now cluster your saved encodings using the [[http://scikit-learn.org/stable/modules/generated/sklearn.cluster.MeanShift.html#sklearn.cluster.MeanShift][MeanShift]] and
+    [[http://scikit-learn.org/stable/modules/generated/sklearn.cluster.AgglomerativeClustering.html#sklearn.cluster.AgglomerativeClustering][AgglomerativeClustering]] algorithms from scikit-learn. For MeanShift,
+    take all the defaults; you may run it in parallel if you like and can.
+    Run AgglomerativeClustering thrice: first using "ward" for the linkage
+    (it will only use a Euclidean metric); and then "average" for the
+    linkage and "manhattan" and "cosine" for the metric.  Discuss the
+    differences you find in the results of the different trials, using any
+    plots you find helpful.
+
+    
+
+
+
+
+* DONE Grading Scale
+
+This homework is worth 15 points. The grading scale is:
+
+
+| fraction correctly reviewed and answered | points awarded |
+|------------------------------------------+----------------|
+| \(\ge 0.95\)                             |             15 |
+| 0.90 -- 0.94                             |             14 |
+| 0.85 -- 0.89                             |             13 |
+| 0.80 -- 0.94                             |             12 |
+| 0.75 -- 0.79                             |             11 |
+| 0.70 -- 0.74                             |             10 |
+| 0.65 -- 0.69                             |              9 |
+| 0.60 -- 0.64                             |              8 |
+| 0.55 -- 0.59                             |              7 |
+| 0.50 -- 0.54                             |              6 |
+| 0.45 -- 0.49                             |              5 |
+| 0.40 -- 0.44                             |              4 |
+| 0.35 -- 0.39                             |              3 |
+| 0.30 -- 0.34                             |              2 |
+| 0.25 -- 0.29                             |              1 |
+| \(< 0.25\)                               |              0 |
+
+
+
+
+
+
+
+
+* DONE Scoring
+
+
+|     question | max pts | answer ok? |
+|--------------+---------+------------|
+|            1 |       1 |            |
+|            2 |       1 |            |
+|            3 |       2 |            |
+|            4 |       2 |            |
+|            5 |       2 |            |
+|            6 |       7 |            |
+|--------------+---------+------------|
+|  total score |      15 |            |
+|   percentage |         |            |
+| total points |         |            |
+#+TBLFM: @8$2=vsum(@I..@II)::@8$3=vsum(@I..@II)::@9$3=@-1/@-2$-1
+
+
+
