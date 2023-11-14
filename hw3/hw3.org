@@ -555,8 +555,17 @@ print(f"T-Statistic: {t_statistic}, P-Value: {p_val}")
 : Baseline Overlap Distribution:
 : <FreqDist with 2 samples and 699 outcomes>
 : Experimental Overlap Distribution:
-: <FreqDist with 2 samples and 603 outcomes>
-: T-Statistic: 0.0, P-Value: 1.0
+: <FreqDist with 2 samples and 598 outcomes>
+: T-Statistic: 0.5030106435903339, P-Value: 0.615049559879469
+The code compared the overlap in TF-IDF representations between a reference
+set and an experimental set. The results show that there is a slight
+difference in the overlap distributions between the two sets. However, the
+t-test suggests that this difference is not statistically significant, as
+the p-value is relatively high. This means that the variation in
+TF-IDF overlaps between the two sets could likely occur by
+chance. Therefore, there is no strong evidence to conclude that the
+experimental dataset significantly differs from the reference dataset in
+terms of TF-IDF overlap.
 
 6.  [@6] <<ml>> Choose 500 random sentences from the Brown news corpus
    tagged with the universal tagset.  For each sentence, identify the nouns
