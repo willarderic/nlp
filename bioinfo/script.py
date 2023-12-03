@@ -1,3 +1,4 @@
+from os import link
 from Bio.PDB.PDBParser import PDBParser
 import matplotlib.pyplot as plt
 import math
@@ -236,77 +237,125 @@ gauss_code += 'C'
 print(gauss_code)
 
 def gen_algebra(gauss_code):
+    add_equals_y = False
     symbol_table = {}
     gauss_code = gauss_code[1:len(gauss_code)-1]
     arc_ends = [(gauss_code[i:i+3]) for i in range(0, len(gauss_code), 3)]
     # Create a map of arc ends so that I can find whether a bond is positive or negative
     arc_end_map = {}
-    for arc_end in arc_ends:
-        idx = arc_end[1]
+    bond_tracker = {}
+    
+    x_start = None
+    y_start = None
+    for i, arc_end in enumerate(arc_ends):
+        arc_idx = arc_end[1]
+        if arc_idx == '1' and x_start == None:
+            x_start = i
+        elif arc_idx == '1':
+            y_start = i
+        
+        if arc_end[0] == 'B' and not bond_tracker.get(arc_end):
+            bond_tracker[arc_end[:2]] = False
 
         found_key = None
         for key in arc_end_map:
-            if idx == key[1]:
+            if arc_idx == key[0][1]:
                 found_key = key
         
         if found_key == None:
-            arc_end_map[arc_end] = None
+            arc_end_map[(arc_end, i)] = None
         else:
-            arc_end_map[arc_end] = found_key
-            arc_end_map[found_key] = arc_end
+            arc_end_map[(arc_end, i)] = found_key
+            arc_end_map[found_key] = (arc_end, i)
 
+    print(arc_end_map)
+    print(x_start, y_start)
+    n = 0
     expr = 'x'
-    expr_list = []
+    swp_expr = 'y'
+    idx = x_start
+    swp_idx = y_start
+    while n < len(arc_ends) + 1:
+        print(n, idx, swp_idx, symbol_table)
+        if idx >= len(arc_ends) or idx == swp_idx:
+            tmp = idx
+            idx = swp_idx
+            swp_idx = tmp
 
-    def next_var():
-        next_var.var_cnt += 1
-        return f'x{next_var.var_cnt}'
-    next_var.var_cnt = 0
+            tmp = expr
+            expr = swp_expr
+            swp_expr = tmp
 
-    for arc_end in arc_ends:
-        # Save the resulting expression from the arc
-        n_var = next_var()
-        expr_list.append(f'{n_var}={expr}')
-        symbol_table[arc_end] = n_var
+        arc_end = arc_ends[idx]
+        # Check if we need to swap
+        if arc_end[0] == 'U':
+            if symbol_table.get(arc_end_map[(arc_end, idx)]) == None:
+                tmp = idx
+                idx = swp_idx
+                swp_idx = tmp
+
+                tmp = expr
+                expr = swp_expr
+                swp_expr = tmp
+        elif arc_end[0] == 'B':
+            _, other_idx = arc_end_map[(arc_end, idx)]
+            if (other_idx != x_start and other_idx != y_start) and symbol_table.get((arc_ends[other_idx - 1], other_idx - 1)) == None:
+                tmp = idx
+                idx = swp_idx
+                swp_idx = tmp
+
+                tmp = expr
+                expr = swp_expr
+                swp_expr = tmp
+        arc_end = arc_ends[idx]
 
         if arc_end[0] == 'U':
-            op = ''
             if arc_end[2] == '+':
                 op = 'op'
             elif arc_end[2] == '-':
                 op = 'inv'
-            
-            if var := symbol_table.get(arc_end_map[arc_end]):
-                expr = f'{op}({expr},{var})'
-            else:
-                n_var = next_var()
-                symbol_table[arc_end_map[arc_end]] = n_var
-                expr = f'{op}({expr},{n_var})'
-                
+            expr = f"{op}({expr},{symbol_table[arc_end_map[(arc_end, idx)]]})"
         elif arc_end[0] == 'B':
-
-            op1 = ''
-            op2 = ''
-            linked_arc_end = arc_end_map[arc_end]
-            if arc_end[2] == '+' and linked_arc_end[2] == '+':
-                op1 = 'R1'
-                op2 = 'R2'
-            elif arc_end[2] == '-' and linked_arc_end[2] == '-':
-                op1 = 'R2'
-                op2 = 'R1'
-            else:
-                op1 = 'R3'
-                op2 = 'R3'
-            
-            if var := symbol_table.get(arc_end_map[arc_end]):
-                expr = f'{op}({expr},{var})'
-
-
-
+            linked_arc_end, linked_arc_end_idx = arc_end_map[(arc_end, idx)]
+            if linked_arc_end_idx > idx:
+                if arc_end[2] == '+' and linked_arc_end[2] == '+':
+                    op = 'R1'
+                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
+                    op = 'R2'
+                else:
+                    op = 'R3'
+                _, other_idx = arc_end_map[(arc_end, idx)]
+                operand = ''
+                if other_idx == y_start:
+                    operand = 'y'
+                elif other_idx == x_start:
+                    operand = 'x'
+                else:
+                    operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
+                expr = f"{op}({expr},{operand})"
+            elif linked_arc_end_idx < idx:
+                if arc_end[2] == '+' and linked_arc_end[2] == '+':
+                    op = 'R2'
+                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
+                    op = 'R1'
+                else:
+                    op = 'R3'
+                _, other_idx = arc_end_map[(arc_end, idx)]
+                operand = ''
+                if other_idx == y_start:
+                    operand = 'y'
+                elif other_idx == x_start:
+                    operand = 'x'
+                else:
+                    operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
+                expr = f"{op}({expr},{operand})"
         
+        # Handles the over crossing as well
+        symbol_table[(arc_end, idx)] = expr
+        idx += 1
+        n += 1
 
-
-gen_algebra(gauss_code)
+gen_algebra('NB1+U2-B1+O2-C')
 
 # print(intersections)
 # Draw 2D projection
