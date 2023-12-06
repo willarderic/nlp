@@ -1,0 +1,956 @@
+* CS 7010 Bioinformatics Project
+#+bibliography: refs.bib
+
+** Milestone 1
+Knot theory is the study of mathematical knots, and how to describe and
+identify them. Proteins are biological structures that have 3 types of
+structures. Their primary structure is a sequence of amino acids the form
+the protein, these proteins the turn into a secondary structure, where
+alpha-helixes and beta-sheafs form, and finally the tertiary structure of a
+protein is when it begins folding over itself. This folding leads to the
+idea of trying to use knot theory in identifying proteins, since this
+folded structure may be knotted. Taking the 2D projection of a 3D knot gives
+us an embedding of the three-dimensional structure in a two-dimensional
+plane. Using what are known as Reidemeister moves, i.e. transformations to
+the two-dimensional structure of the knot, one can show whether to knots
+are equivalent if one can be turned to the other by these Reidemeister
+moves. Applying these projections and Reidemeister moves to proteins shows
+that 97%+ of the proteins are the "unknot" which is simple a ring. A recent
+[[https://arxiv.org/abs/1912.09353][paper]] has created more rigorous rules in addition to these Reidemeister
+moves, including bonds, orientation, alpha-helixes, and beta-sheafs, and
+attempts to use those to see if two protein structures are equivalent. The
+paper defines an algebraic structure called a bondle which is used to
+evaluate equivalence. I would like to parse 3D protein information into a
+2D projection for the purpose of applying this algebra to proteins and try
+to classify them as equivalent (based on if they can be colored the same) or not based on structure alone. As the
+paper is quite recent, I have not seen any attempt to do this in citations
+of the paper, hence I believe it to be a novel idea.
+
+- The data set I will be using is [[https://www.rcsb.org/][RCSB]], a database filled with .pdb files
+  that contain information regarding the 3D structure of proteins.
+- My plan is to create a parser to parse out the information in the .pdb
+  files into a data structure. For now I am thinking of using some graph
+  data structure embedded in a 3D space. I will then need to project this
+  connected structure onto a 2D plane and find the points of intersection
+  with itself. I plan to pick the xy-plane to project onto and used the z
+  coordinate to find if an intersection is above or below. Then I will need
+  to come up with a way to apply the algebra to this projection.
+- To evaluate the results, I will attempt to use proteins in the database
+  and try to find equivalence between the same proteins and different ones
+  and check if it can.
+- The control would be the examples from the paper to ensure that the
+  method is working.
+
+I expect to that it will be able to color the proteins correctly and I can
+manually verify (will try to do it programmatically but we will see) that
+they are colored the same or not.
+
+** Milestone 2
+
+*** Biology Definitions (for me)
+Residue: a single unit that makes up a polymer, such as an amino acid in a
+polypeptide or protein.
+
+Proteins: They consist of long chains of amino acids, which are bonded
+together by peptide linkages and thus called polypeptides. There are about
+20 amino acids, and the atoms most prevalent in these are carbon, hydrogen,
+oxygen, nitrogen, and sulfur.
+
+*** Refined idea
+
+This project is based on the work [cite:@adams2020knot] of writing an algorithm to find
+topological equivalence of proteins starting from a PDB file of the protein.
+
+A knot is a linear segment in three dimensions. Generally when working with
+knots we project them into two dimensions. To check the equivalence of two
+knots, a first approach was called Reidemeister moves, which categorized
+knots into the same class if you can transform from a 2d projectin of one
+knot into a 2d projection of the other knot using 3 types of Reidemeister
+moves. Calculating Reidemeister moves is not the easy for a computer to do
+though, so knot invariants were introduced. A /knot invariant/ is a mapping
+from knot diagrams to a set such that any two projections of knots of the
+same knot type have the same invariant. Coloring segments of knots became a
+popular invariant and the rest of the algebraic objects that are introduced
+will be used to color knots. A /quandle/ [cite:@joyce1982classifying] was an
+invariant introduced in 1982 which is an algebraic object. This algebraic
+object allows for orientation of a knot. A /coloring/ of an oriented knot
+projection by a quandle is an assignment value to each arc, where an /arc/
+is defined as a part of strand that both starts and ends at an
+undercrossing, but going over zero or many crossings as we like (Start at
+beginning of knot and end at end). 
+
+
+Proteins are a sequence of amino acid residues that form a structure in
+three dimensions with a starting N-terminus and an ending C-terminus, thus
+are a linear segment in three dimensions and are a knot. Therefore we can
+apply knot invariants to determine topological equivalence between
+proteins. Proteins carry more data than over and under crossings of the
+residue sequences in 3-dimensions. We have to worry about alpha-helices,
+beta-sheets, disulfide bonds, and orientation. A /singquandle/
+[cite:@churchill2017singular] is an algebraic structure that accounts for
+/singularities/, i.e. bonds, in knot projections. Alpha-helices are just
+twists of the linear segment, and from Reidemeister move 1, they are
+equivalent to a straight segment annd can be remove without affecting the
+topological equivalence. Beta sheets can be truned into many bonds. The
+/oriented bondle/ is finally introduced in the paper and is the algebraic
+object we can use that will account for alpha-helices, beta-sheets,
+disulfide bonds, and orientation.
+
+The recency of [cite:@adams2020knot] has not left much room for work in
+this area. There are some applications and extensions of the methods
+[cite:@heidari2020circuit], [cite:@scalvini2020topology],
+[cite@ceniceros2021coloring], but there does not seem to be much
+computation work besides [cite:@carrivale2022bachelor] which is an
+algebraic engine for evaluating quandles. 
+
+The dataset I will be using is [[https://www.rcsb.org/][RCSB]] which is a database of proteins and
+their corresponding PDB files which are used to generated 3D models of the
+proteins. From this dataset I have found some small proteins to test on,
+notably:
+  + [[https://www.rcsb.org/structure/5awl][5awl]] - very small, easy to visualize
+  + [[https://www.rcsb.org/structure/3NIR][3nir]] - small and includes bonds
+I also have downloaded the following proteins, but have not extensively
+used them yet:
+  + [[https://www.rcsb.org/structure/1k8h][1k8h]]
+  + [[https://www.rcsb.org/structure/1mh1][1mh1]]
+  + [[https://www.rcsb.org/structure/2fg7][2fg7]]
+  + [[https://www.rcsb.org/structure/6a5j][6a5j]]
+  + [[https://www.rcsb.org/structure/7ur8][7ur8]]
+
+*** Algorithm:
+1. Parse PDB file (find residue data, bond data, beta-sheet data) using
+   [[https://biopython.org/][biopython]]
+2. Get 3-dimensional coordinates from parsed data, generate a 2d projection
+3. Calculate oriented crossings from line intersections
+4. Calculate bonds and beta-sheets
+5. Using information from above steps, generate algebraic representation of
+   the knot
+6. Calculate topological equivalence by following method from the paper
+ 
+The beginning of the implementation of the code can be found [[file:script.py][here]]. Steps
+1-4 are implemented already. Next would be the algebraic representation.
+
+*Note*: These code blocks are to demonstrate the code written for the
+algorithm and will not run by themselves.
+
+Step 1: The biopython package makes it incredibly easy to parse pdb files,
+although they were not able to parse the bond information, so I had to do
+that manually.
+
+#+BEGIN_SRC python
+from Bio.PDB.PDBParser import PDBParser
+import matplotlib.pyplot as plt
+
+RESIDUE_NAMES = ["ARG", "HIS", "LYS", "ASP", "GLU", "SER", "THR", "ASN", "GLN", "CYS", "SEC", "GLY", "PRO", "ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TYR", "TRP"]
+
+protein_name = "3nir"
+
+structure_id = protein_name
+filename = f"/Users/ericwillard/School/bioinfo/project/pdb/{protein_name}.pdb"
+parser = PDBParser(PERMISSIVE=1)
+structure = parser.get_structure(structure_id, filename)[0]
+
+def parse_ss_bonds(filename):
+    with open(filename) as f:
+	return [(int(line[17:21].strip()), int(line[31:35].strip())) for line in f.readlines() if line[:6] == "SSBOND"]
+#+END_SRC
+
+Step 2) Acquire the 3d coordinates from the structure that was parsed from
+the PDB file. Some code is included that I used to generate
+visualizations. I filter out residues to only be amino acids (list of amino
+acids from codeblock above) and get the coordinate of the nitrogen atom
+(first is the list of atoms) and use that as a representation of the
+location of the amino acid.
+#+BEGIN_SRC python
+for res in structure.get_residues():
+    # Change this from blacklist to whitelist (only accept the 20 amino acids, nothing else)
+    if res.get_resname() in RESIDUE_NAMES:
+        residues.append(res.get_resname())
+
+        x, y, z = list(res.get_atoms())[0].get_coord()
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
+
+# Draw 3d shape
+fig = plt.figure()
+ax = fig.add_subplot(projection='3d')
+ax.plot(xs, ys, zs, color='red')
+ax.set_xlabel('X Label')
+ax.set_ylabel('Y Label')
+ax.set_zlabel('Z Label')
+
+for x, y, z, residue in zip(xs, ys, zs, residues):
+    ax.text(x, y, z, residue)
+
+plt.show()
+#+END_SRC
+The result of plotting this is [[file:./images/3d3nir.png]]. The picture
+depicting 3nir from RCSB is file:./images/3nir_assembly-1.jpeg.
+
+Step 3) To calulate the crossings from the 3d coordinates, I project them
+into 2 dimensions by only looking at 2 of the 3 coordinates (yz-plane in
+this case). For each segment of the projection, I check if it intersects
+with any other segments minus the segment itself, the segment before, and
+the segment after itself. Here is where I will need to calculate the
+orientation (use direction of the lines to find the orientation of the
+crossing) and whether the crossing is above or below (will use the third
+coordinate and the equation of the line in 3d).
+
+#+BEGIN_SRC python
+def line_intersection(line1, line2):
+    x1 = line1[0][0]
+    y1 = line1[0][1]
+    x2 = line1[1][0]
+    y2 = line1[1][1]
+    x3 = line2[0][0]
+    y3 = line2[0][1]
+    x4 = line2[1][0]
+    y4 = line2[1][1]
+
+    if (x2 - x1 == 0) or (x4 - x3 == 0):
+        return False
+    
+    m1 = (y2 - y1) / (x2 - x1)
+    m2 = (y4 - y3) / (x4 - x3)
+
+    # same line or parallel
+    if (m1 == m2):
+        return False
+
+    b1 = y1 - m1 * x1
+    b2 = y3 - m2 * x3
+
+    if (m1 - m2) == 0:
+        return False
+
+    x_int = (b2 - b1) / (m1 - m2)
+
+    if (x_int < max( min(x1,x2), min(x3,x4))) or (x_int > min( max(x1,x2), max(x3,x4))):
+        return False
+    else:
+        return (x_int, b1 + m1 * x_int)
+
+
+points = list(zip(ys, zs))
+
+lines = []
+for i in range(len(points) - 1):
+    lines.append((points[i], points[i+1]))
+
+
+intersections = []
+for i, line1 in enumerate(lines):
+    for j, line2 in enumerate(lines): 
+        if i != j and i != j - 1 and i != j + 1:
+            if intersection := line_intersection(line1, line2):
+                intersections.append(intersection)
+#+END_SRC
+
+Step 4) To calculate bonds, the PDB file tells the indices of the two
+residues that are bonded, so I can parse that out, then draw a line between
+the residues to visualize the bond
+
+Here is a visualization of the projection: file:./images/2d3nir.png. Blue
+line is the projection of the protein, red dots are the
+intersections/crossings, and the purple lines are the bonds.
+
+Step 5) I don't particularly know the pseudo code for how I will go about
+generating the algebraic expressions currently, but I do not believe it to
+be very difficult after the above processing.
+
+Step 6) This step is simple calculation in which more info can be found in
+the paper.
+
+*** Evaluating Results
+To test the results, I will split testing into 3 phases:
+1) I want to evaluate against the examples in the paper. In order to do
+   this, I will have to manually plot the data and verify that I achieve
+   the same results.
+2) To test topological equivalence, I will test checking if a protein is
+   topologically equivalent to itself. I will start with the same
+   projection, so it should achieve the same result. I can then try
+   different 2d projections of the protein and see if they are still
+   topologically equivalent.
+3) Test different proteins on each other. In this step, I would like to
+   find equivalent and non-equivalent proteins and try to see why they may
+   or may no be equivalent biologically.
+
+*** Difficulties
++ The granularity of choosing residues may not lend itself to the best
+  projections of the proteins. Perhaps I could attempt to use atoms to make
+  the projection more smooth?
+  
+
+
+** Milestone 3 & 4
+
+*** Introduction
+This project is based on the work [cite:@adams2020knot]. I will be writing
+an algorithm to find topological equivalence of proteins starting from a
+PDB file of the protein.
+
+A knot is a linear segment in three dimensions. Generally when working with
+knots we project them into two dimensions. To check the equivalence of two
+knots, a first approach was called Reidemeister moves, which categorized
+knots into the same class if you can transform from a 2d projectin of one
+knot into a 2d projection of the other knot using 3 types of Reidemeister
+moves. Calculating Reidemeister moves is not the easy for a computer to do
+though, so knot invariants were introduced. A /knot invariant/ is a mapping
+from knot diagrams to a set such that any two projections of knots of the
+same knot type have the same invariant. Coloring segments of knots became a
+popular invariant and the rest of the algebraic objects that are introduced
+will be used to color knots. A /quandle/ [cite:@joyce1982classifying] was an
+invariant introduced in 1982 which is an algebraic object. This algebraic
+object allows for orientation of a knot. A /coloring/ of an oriented knot
+projection by a quandle is an assignment value to each arc, where an /arc/
+is defined as a part of strand that both starts and ends at an
+undercrossing, but going over zero or many crossings as we like (Start at
+beginning of knot and end at end). 
+
+
+Proteins are a sequence of amino acid residues that form a structure in
+three dimensions with a starting N-terminus and an ending C-terminus, thus
+are a linear segment in three dimensions and are a knot. Therefore we can
+apply knot invariants to determine topological equivalence between
+proteins. Proteins carry more data than over and under crossings of the
+residue sequences in 3-dimensions. We have to worry about alpha-helices,
+beta-sheets, disulfide bonds, and orientation. A /singquandle/
+[cite:@churchill2017singular] is an algebraic structure that accounts for
+/singularities/, i.e. bonds, in knot projections. Alpha-helices are just
+twists of the linear segment, and from Reidemeister move 1, they are
+equivalent to a straight segment annd can be remove without affecting the
+topological equivalence. Beta sheets can be truned into many bonds. The
+/oriented bondle/ is finally introduced in the paper and is the algebraic
+object we can use that will account for alpha-helices, beta-sheets,
+disulfide bonds, and orientation.
+
+The recency of [cite:@adams2020knot] has not left much room for work in
+this area. There are some applications and extensions of the methods
+[cite:@heidari2020circuit], [cite:@scalvini2020topology],
+[cite@ceniceros2021coloring], but there does not seem to be much
+computation work besides [cite:@carrivale2022bachelor] which is an
+algebraic engine for evaluating quandles. 
+
+The dataset I will be using is [[https://www.rcsb.org/][RCSB]] which is a database of proteins and
+their corresponding PDB files which are used to generated 3D models of the
+proteins. From this dataset I have found some small proteins to test on,
+notably:
+  + [[https://www.rcsb.org/structure/5awl][5awl]] - very small, easy to visualize
+  + [[https://www.rcsb.org/structure/3NIR][3nir]] - small and includes bonds
+I also have downloaded the following proteins, but have not extensively
+used them yet:
+  + [[https://www.rcsb.org/structure/1k8h][1k8h]]
+  + [[https://www.rcsb.org/structure/1mh1][1mh1]]
+  + [[https://www.rcsb.org/structure/2fg7][2fg7]]
+  + [[https://www.rcsb.org/structure/6a5j][6a5j]]
+  + [[https://www.rcsb.org/structure/7ur8][7ur8]]
+
+*** Reidemeister moves, Gauss Codes, quandles, and bondles
+
+In this section I will go over concepts introduced in the paper that will
+be crucial elements of the algorithm.
+
+**** Reidemeister moves
+I am including Reidemeister moves here for reference, but they do not
+necessarily need to be known to understand the rest of the content in the
+report. There are 3 types of Reidemeister moves for purely knots
+  + [[./images/type1.png][Type I]]
+  + [[./images/type2.png][Type II]]
+  + [[./images/type3.png][Type III]]
+When introducing singularities, which will be used to represent bonds, we
+get two more types of Reidemeister moves
+  + [[./images/type4.png][Type IV]]
+  + [[./images/type5.png][Type V]]
+
+**** Gauss Codes
+
+Gauss codes we introduced to represent knot projections using only symbols
+instead of diagrams. This allows portability and simplicity in the
+representation. We are able to turn knot projection to gauss code and vice
+versa, whilst still being able to apply Reidemeister moves. Proteins are
+written from N-terminus to C-terminus, so gauss codes will start with an
+'N' and end with a 'C'.
+
+The first two codes that we will introduce are the over and under crossing
+codes 'O' and 'U'. We will represent a strand crossing over another strand
+as 'O', and a strand crossing under another strand as 'U'. There are two
+types of these crossing with respect to what direction these strand are
+travelling. Therefore we will have a /positive/ style crossing and a
+/negative/ style crossing depicted [[./images/gauss_cross.png][here]]. We will denote an over crossing
+with a positive crossing as 'O+' and an over crossing with a negative
+crossing as 'O-'. Similarly for under crossing, 'U+' and 'U-'.
+
+The next type of code to introduce is for bonds. We will denote strand that
+has a bond attached to it as 'B' where the stand and bond connect. If we
+start from the N-terminus of a protein and follow the strand along until we
+get to a bond, we will denote the first connection of the bond and strand
+as positive, '+'. When we continue along the strand and find where the bond
+connects to the strand again, we will mark with a 'B' once again and if the
+strand runs parellel to the strand the bond first occurred, we will mark
+the code positively with a '+', and if not (i.e. anti-parallel), we will
+mark it negatively with a '-'.
+
+An alpha-helix will be denoted with '/alpha/' and we will used a '+' if the
+helix coils clockwise and '-' if a helix coils counterclockwise.
+
+The last thing we need to account for is a beta-pleated sheet. These work
+exactly the same as bonds, but we use '/beta/' instead of 'B'.
+
+When looking at a projection, we will note each crossing/bond with a
+number, these numbers also go into the gauss code as well between the
+symbol and the plus/minus. So the codes would look like 'U1+', 'O2-', etc.
+
+Example of a projection and its gauss code: [[./images/gauss_code_example.png][example]]
+
+**** Quandles and Bondles
+
+A /quandle/ is a set $X$ with an operation $\rhd : X \times X \rightarrow X$
+such that the three condiditions are satisfied.
+  (1) For all $x \in X$, $x \rhd x = x$
+  (2) There exists an inverse function $\rhd^{-1}$ such that for all $x,y
+\in X$, $(x \rhd y) \rhd^{-1} y = x = (x \rhd^{-1} y) \rhd y).
+  (3) For all $x, y, z \in X$, $(x \rhd y) \rhd z = (x \rhd z) \rhd (y \rhd
+z).
+
+A /coloring/ of an oriented knot projection by a quandle is an assignment
+of a value from $X$ to each /arc/. An /arc/ is defined to start and end at
+an under crossing, but can cross over as many strands as it wants. We will
+denote the coloring to follow rules adhere to [[./images/quandle_example.png][this]] image. One can see that
+at positive crossings, the under stand gets colored with $x \rhd y$ and
+with a negative crossing it gets marked with $x \rhd^{-1} y$. The quandle
+respects the first three Reidemeister moves as shown [[./images/reid_quandle.png][here]].
+
+A /singquandle/ is a quandle along with something called a /singularity/. A
+/singularity/ is just another type of "[[./images/singularity.png][crossing]]" we can have with
+strands. Singularities will be used to designate bonds later. We 'color'
+the strands after the singularity with maps $R_1(x,y)$, $R_2(x,y)$ from
+$X \times X \rightarrow X$ for parallel bonds and $R_3(x,y)$,$R_4(x,y)$
+from $X \times X \rightarrow X$ for anti-parallel bonds. The singularity
+diagram can be rotated 90, 180, and 270 degrees to obtain more relations
+that must be satisfied which can be found in the paper. We will represent a
+bond as a singularity in the following way: [[./images/bond_sing.png][bond singularity]] for parallel
+and anti-parallel, respectively. While singularities can be rotated 90,
+180, and 270, we can see that the bonds can only be rotated by 180
+degrees. From this rotation we can also see that $R_4(x, y) = R_3(y, x)$,
+so we eliminate the $R_4$ relation completely.
+
+An /oriented bondle/ is a singquandle that satisfies some specific
+relations that can be found in the paper.
+
+One of the central theorems in the paper, Corollary 6.6, lets us evaluate
+the colorings we mark the projection with. We can let the set $X = Z_n$
+where $n = pq$ with p and q odd primes. We can then evaluate each operation
+as follows:
+  + $x \rhd y = ax + (1 - a)y$
+  + $x \rhd^{-1} y = a^{-1}x + (1 - a^{-1})y, where $a$ is invertible in
+    $Z_n$
+  + $R_1(x,y) = bx + (1 - b)y$ for any fixed element $b \in Z_n$
+  + $R_2(x,y) = a(1 - b)x + [b + (1 - a)(1 - b)]y$ for any fixed element $b
+    \in Z_n$
+  + $R_3(x, y) = mx + (1 - m)y$
+
+ as long as p divides m and q divides $(m - 1$ or p divides $(m - 1) and q
+ divides m.
+
+**** Algorithm
+
+I have decided to split my algorithm into two separate algorithms. The
+first algorithm is going to parse the PDB file and generate a gauss code
+for a given protein by projecting it into 2D and calculating crossings and
+bonds. For now I have excluded /beta/-pleated sheets from being generated
+as they can be distilled into multiple bonds. /alpha/-helices do not need
+to be included in the gauss codes either as they are equivalent to a type I
+Reidemeister move applied however many times the /alpha/-helix coils. This
+leaves me with only needing to calculate crossings and bonds.
+
+To get the 3D positions of the amino acids is actually quite trivial. I
+used a library called biopython that has a PDB parser. I parsed out
+everything on a residue granularity and filtered out anything that wasn't
+one of the 20 amino acids. The amino acids are molecules, so they don't
+have 3D positions themselves, the atoms that make them up do. I decided to
+use the position of the nitrogen (N) atom as a representative for the position
+of the amino acid since it is present in all of them. I tried using a
+average of all the atoms at one point, but the results were not as good as
+just using nitrogen. Along with the 3D positions, I can get the disuflide
+bonds and which amino acids they are connected to.
+
+[[./images/3d3nir.png][Example]] of the protein [[./images/3nir_assembly-1.jpeg][3nir]]
+
+IMPORTANT NOTE: I have modified how the gauss codes are done from what they
+did in the paper. For bonds, If the beginning line attached translated to
+the origin is in quadrant 3 or 4, I annotate the bond with a '-' instead of
+a positive. Then if the line on the other side runs parallel, it will be
+annotate with the same '-'. If it is in quadrant 1 or 2 it will be marked
+'+' and the parallel strand will be marked '+' 
+
+***** Algorithm 1
+*Algorithm 1: Generate gauss codes from 3D positions of amino acids*
+lines = all the lines created by connected sequential points together
+starting from the N-terminus
+
+gauss_code = ''
+n = 0 and increments every time it is used
+
+for line1 in lines
+  for line2 in lines
+    if line2 is not line1 or the line before line1 or the line after line1
+      if line1 has a bond associated with it:
+        if this is the first occurence of this bond
+	  translate this line to the origin
+	  if the y value of the line is in quads 1 or 2
+	    gauss_code.append('B{n}+')
+	  else
+	    gauss_code.append('B{n}-')
+	else
+	  if dot_product(line1, line2) > 0
+	    if line1 in quads 1 or 2
+	      gauss_code.append('B{n}+')
+	    else line1 in quads 3 or 4
+	      gauss_code.append('B{n}-')
+	  elif dot_product(line1, line2) < 0
+	     if line1 in quads 1 or 2
+	      gauss_code.append('B{n}-')
+	    else line1 in quads 3 or 4
+	      gauss_code.append('B{n}+')
+
+      if line1 intersects line2 in 2d
+        calculate the 3rd coordinate z1 for line1 and z2 for line2
+	if z1 > z2
+	  if the angle between line1 and line2 is less than 180
+	    gauss_code.append('O{n}-')
+	  else the angle between line1 and line2 is greater than 180
+	    gauss_code.append('O{n}+')
+	else z1 < z2
+	 if the angle between line1 and line2 is less than 180
+	    gauss_code.append('U{n}+')
+	  else the angle between line1 and line2 is greater than 180
+	    gauss_code.append('U{n}-')
+
+return gauss_code
+*End Algorithm 1*
+
+***** Code for Algorithm 1
+#+begin_src python :results output
+from os import link
+from Bio.PDB.PDBParser import PDBParser
+import matplotlib.pyplot as plt
+import math
+
+RESIDUE_NAMES = ["ARG", "HIS", "LYS", "ASP", "GLU", "SER", "THR", "ASN", "GLN", "CYS", "SEC", "GLY", "PRO", "ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TYR", "TRP"]
+
+protein_name = "5awl"
+
+structure_id = protein_name
+filename = f"/Users/ericwillard/School/bioinfo/project/pdb/{protein_name}.pdb"
+parser = PDBParser(PERMISSIVE=1)
+structure = parser.get_structure(structure_id, filename)[0]
+xs = []
+ys = []
+zs = []
+residues = []
+
+
+def parse_ss_bonds(filename):
+    with open(filename) as f:
+        return [(int(line[17:21].strip()), int(line[31:35].strip())) for line in f.readlines() if line[:6] == "SSBOND"]
+
+ss_bonds = parse_ss_bonds(filename)
+print(f"Number of residues = {len(list(structure.get_residues()))}")
+for res in structure.get_residues():
+    # Change this from blacklist to whitelist (only accept the 20 amino acids, nothing else)
+    if res.get_resname() in RESIDUE_NAMES:
+        residues.append(res.get_resname())
+        x, y, z = list(res.get_atoms())[0].get_coord()
+        xs.append(x)
+        ys.append(y)
+        zs.append(z)
+
+def line_intersection(line1, line2):
+    x1 = line1[0][0]
+    y1 = line1[0][1]
+    x2 = line1[1][0]
+    y2 = line1[1][1]
+    x3 = line2[0][0]
+    y3 = line2[0][1]
+    x4 = line2[1][0]
+    y4 = line2[1][1]
+
+    if (x2 - x1 == 0) or (x4 - x3 == 0):
+        return False
+    
+    m1 = (y2 - y1) / (x2 - x1)
+    m2 = (y4 - y3) / (x4 - x3)
+
+    # same line or parallel
+    if (m1 == m2):
+        return False
+
+    b1 = y1 - m1 * x1
+    b2 = y3 - m2 * x3
+
+    if (m1 - m2) == 0:
+        return False
+
+    x_int = (b2 - b1) / (m1 - m2)
+
+    if (x_int < max( min(x1,x2), min(x3,x4))) or (x_int > min( max(x1,x2), max(x3,x4))):
+        return False
+    else:
+        return (x_int, b1 + m1 * x_int)
+
+
+points = list(zip(ys, zs))
+lines = []
+for i in range(len(points) - 1):
+    lines.append((points[i], points[i+1]))
+
+points3d = list(zip(xs, ys, zs))
+lines3d = []
+for i in range(len(points3d) - 1):
+    lines3d.append((points3d[i], points3d[i+1]))
+
+def calculate_x(line3d, intersection2d):
+    x1, y1, z1 = line3d[0]
+    x2, y2, z2 = line3d[1]
+    x = ((x1 - x2) * (intersection2d[1] - z1) / (z1 - z2)) + x1
+    return x
+
+def getLineAngle(line):
+    x, y = line[1][0] - line[0][0], line[1][1] - line[0][1]
+    # print(x, y)
+    if x >  0 and y > 0:
+        # QUAD 1
+        theta = math.atan(abs(y)/abs(x))
+        return theta
+    elif x < 0 and y > 0:
+        # QUAD 2
+        theta = math.atan(abs(y)/abs(x))
+        # atan returns the negative angle from straight up here, so if we make it positive and add 90 degrees, we get the angle from (0,1)
+        return theta + math.pi / 2
+    elif x < 0 and y < 0:
+        # QUAD 3
+        theta = math.atan(abs(y)/abs(x))
+        return theta + math.pi
+    elif x > 0 and y < 0:
+        # QUAD 4
+        theta = math.atan(abs(y)/abs(x))
+        return theta + 3 * math.pi / 2
+    elif x == 0 and y > 0:
+        return math.pi / 2
+    elif x == 0 and y < 0:
+        return 3 * math.pi / 2
+    elif x > 0 and y == 0:
+        return 0
+    elif x < 0 and y == 0:
+        return math.pi
+
+intersections = []
+
+gauss_code = 'N'
+intersection_to_id = {}
+bond_to_id = {}
+counter = 1
+for i, line1 in enumerate(lines):
+    for j, line2 in enumerate(lines): 
+        if i != j and i != j - 1 and i != j + 1:
+            # currently not handling the orientation of the bond. 
+            # Can change the '+' on the first B gauss code to a '-' if y < 0 and keep a '+' if y > 0
+            bond = None
+            if i in [ss_bonds[k][0] for k in range(len(ss_bonds))]:
+                for k in range(len(ss_bonds)):
+                    if i == ss_bonds[k][0]:
+                        bond = ss_bonds[k]
+                if bond != None:
+                    if not bond in bond_to_id.keys():
+                        bond_to_id[bond] = counter
+                        gauss_code += 'B' + str(counter) + '+'
+                        counter += 1
+
+            bond = None
+            if i in [ss_bonds[k][1] for k in range(len(ss_bonds))]:
+                for k in range(len(ss_bonds)):
+                    if i == ss_bonds[k][1]:
+                        bond = ss_bonds[k]
+                if bond != None:
+                    if not bond in bond_to_id.keys():
+                        bond_to_id[bond] = counter
+                        bond_start_line = lines[bond[0]]
+                        x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
+                        x2, y2 = bond_start_line[1][0] - bond_start_line[0][0], bond_start_line[1][1] - bond_start_line[0][1]
+                        
+                        dot_prod = x1 * x2  + y1 * y2
+                        print(f"<({x1}, {y1}), ({x2}, {y2})> = {dot_prod}")
+                        if dot_prod >= 0:
+                            gauss_code += "B" + str(counter) + "+"
+                        else:
+                            gauss_code += "B" + str(counter) + "-"
+                        counter += 1
+                    elif bond in bond_to_id.keys() and bond_to_id[bond] != None:
+                        bond_start_line = lines[bond[0]]
+                        x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
+                        x2, y2 = bond_start_line[1][0] - bond_start_line[0][0], bond_start_line[1][1] - bond_start_line[0][1]
+                        
+                        dot_prod = x1 * x2  + y1 * y2
+                        print(f"<({x1}, {y1}), ({x2}, {y2})> = {dot_prod}")
+                        if dot_prod >= 0:
+                            gauss_code += "B" + str(bond_to_id[bond]) + "+"
+                        else:
+                            gauss_code += "B" + str(bond_to_id[bond]) + "-"
+                        bond_to_id[bond] = None
+
+            if intersection := line_intersection(line1, line2):
+                intersections.append(intersection)
+                if (not (i, j) in intersection_to_id.keys()) and (not (j, i) in intersection_to_id.keys()):
+                    intersection_to_id[(i, j)] = counter
+                    counter += 1
+                
+                # Find over/under
+                x1 = calculate_x(lines3d[i], intersection)
+                x2 = calculate_x(lines3d[j], intersection)
+
+                theta1 = getLineAngle(line1)
+                theta2 = getLineAngle(line2)
+
+                inter_num = intersection_to_id[(i, j)] if (i, j) in intersection_to_id.keys() else intersection_to_id[(j, i)]
+
+                if x1 > x2:
+                    gauss_code += 'O' + str(inter_num)
+                    if theta2 < theta1 and theta2 > (theta1 - math.pi):
+                        gauss_code += '-'
+                    else:
+                        gauss_code += '+'
+                else:
+                    gauss_code += 'U' + str(inter_num)
+                    if theta2 < theta1 and theta2 > (theta1 - math.pi):
+                        gauss_code += '+'
+                    else:
+                        gauss_code += '-'
+
+gauss_code += 'C'
+print(gauss_code)
+#+end_src
+
+#+results:
+: Number of residues = 22
+: NO1-O2+O3+U1-U2+U3+C
+
+***** Algorithm 2
+Create a symbol table to keep track of arc values.
+Have a mapping between arc ends called with the same middle n value. Call
+these /linked/ arc ends
+
+(1) Split the gauss code into its individual codes, I will call them /arc
+ends/.
+(2) Have a pointer to each arc end that has a 1 in it.
+(3) Starting with the one at the beginning
+   (i) If the arc end is an over crossing 'O{n}(+/-)', add the value of the previous
+arc end into the symbol table for entry 'O{n}(+/-)'.
+   (ii) If the arc end is an under crossing, check if the corresponding
+over arc end has a value in the symbol table yet. If not, swap the pointers
+and start over at (i) with the new arc end being pointed at. If it is in
+the symbol table:
+       (a) If the orientation is positive, set the arc end in the symbol
+table to be op(prev_arc_end, linked_arc_end)
+       (b) If the orientation is negative, set the arc end in the table
+table to be inv(prev_arc_end, linked_arc_end)
+   (iii) If the arc end is a bond, check if the linked arc end's
+predecessor has a value in the symbol table. If not, swap the pointers and
+start over at (i) with the new arc end being pointer at. If it is in the
+symbol table, and the index of this arc end is less than the index of the
+linked arc end:
+       (a) If this and linked arc end are '+', store R2(linked_prev_expr,
+prev_expr)
+       (b) If this and linked arc end are '-', store R1(prev_expr,
+linked_prev_expr)
+       (c) Else store R3(prev_expr, linked_prev_expr)
+     If the index of this arc end is greater than the index of the linked
+arc end:
+       (a) If this and linked arc end are '-', store R2(linked_prev_expr,
+prev_expr)
+       (b) If this and linked arc end are '+', store R1(prev_expr,
+linked_prev_expr)
+       (c) Else store R3(prev_expr, linked_prev_expr)
+
+***** Code for Algorithm 2
+#+begin_src python :results output
+def gen_algebra(gauss_code):
+    add_equals_y = False
+    symbol_table = {}
+    gauss_code = gauss_code[1:len(gauss_code)-1]
+    arc_ends = [(gauss_code[i:i+3]) for i in range(0, len(gauss_code), 3)]
+    # Create a map of arc ends so that I can find whether a bond is positive or negative
+    arc_end_map = {}
+    bond_tracker = {}
+    
+    x_start = None
+    y_start = None
+    for i, arc_end in enumerate(arc_ends):
+        arc_idx = arc_end[1]
+        if arc_idx == '1' and x_start == None:
+            x_start = i
+        elif arc_idx == '1':
+            y_start = i
+        
+        if arc_end[0] == 'B' and not bond_tracker.get(arc_end):
+            bond_tracker[arc_end[:2]] = False
+
+        found_key = None
+        for key in arc_end_map:
+            if arc_idx == key[0][1]:
+                found_key = key
+        
+        if found_key == None:
+            arc_end_map[(arc_end, i)] = None
+        else:
+            arc_end_map[(arc_end, i)] = found_key
+            arc_end_map[found_key] = (arc_end, i)
+
+    # print(arc_end_map)
+    # print(x_start, y_start)
+    n = 0
+    expr = 'x'
+    swp_expr = 'y'
+    idx = x_start
+    swp_idx = y_start
+    while n < len(arc_ends) + 1:
+        # print(n, idx, swp_idx, symbol_table)
+        if idx >= len(arc_ends) or idx == swp_idx:
+            tmp = idx
+            idx = swp_idx
+            swp_idx = tmp
+
+            tmp = expr
+            expr = swp_expr
+            swp_expr = tmp
+
+        arc_end = arc_ends[idx]
+        # Check if we need to swap
+        if arc_end[0] == 'U':
+            if symbol_table.get(arc_end_map[(arc_end, idx)]) == None:
+                tmp = idx
+                idx = swp_idx
+                swp_idx = tmp
+
+                tmp = expr
+                expr = swp_expr
+                swp_expr = tmp
+        elif arc_end[0] == 'B':
+            _, other_idx = arc_end_map[(arc_end, idx)]
+            if (other_idx != x_start and other_idx != y_start) and symbol_table.get((arc_ends[other_idx - 1], other_idx - 1)) == None:
+                tmp = idx
+                idx = swp_idx
+                swp_idx = tmp
+
+                tmp = expr
+                expr = swp_expr
+                swp_expr = tmp
+        arc_end = arc_ends[idx]
+
+        if arc_end[0] == 'U':
+            if arc_end[2] == '+':
+                op = 'op'
+            elif arc_end[2] == '-':
+                op = 'inv'
+            expr = f"{op}({expr},{symbol_table[arc_end_map[(arc_end, idx)]]})"
+        elif arc_end[0] == 'B':
+            linked_arc_end, linked_arc_end_idx = arc_end_map[(arc_end, idx)]
+            swap_params = False
+            if linked_arc_end_idx > idx:
+                if arc_end[2] == '+' and linked_arc_end[2] == '+':
+                    op = 'R2'
+                    swap_params = True
+                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
+                    op = 'R1'
+                    swap_params = False
+                else:
+                    op = 'R3'
+                    swap_params = False
+                _, other_idx = arc_end_map[(arc_end, idx)]
+                operand = ''
+                if other_idx == y_start:
+                    operand = 'y'
+                elif other_idx == x_start:
+                    operand = 'x'
+                else:
+                    operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
+                if swap_params:
+                    expr = f"{op}({operand},{expr})"
+                else:
+                    expr = f"{op}({expr},{operand})"
+            elif linked_arc_end_idx < idx:
+                if arc_end[2] == '+' and linked_arc_end[2] == '+':
+                    op = 'R1'
+                    swap_params = False
+                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
+                    op = 'R2'
+                    swap_params = True
+                else:
+                    op = 'R3'
+                    swap_params = False
+                _, other_idx = arc_end_map[(arc_end, idx)]
+                operand = ''
+                if other_idx == y_start:
+                    operand = 'y'
+                elif other_idx == x_start:
+                    operand = 'x'
+                else:
+                    operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
+                if swap_params:
+                    expr = f"{op}({operand},{expr})"
+                else:
+                    expr = f"{op}({expr},{operand})"
+        
+        # Handles the over crossing as well
+        symbol_table[(arc_end, idx)] = expr
+        idx += 1
+        n += 1
+    return symbol_table[arc_ends[y_start - 1], y_start - 1]
+print(f"y={gen_algebra('NB1+U2-B1+O2-C')}")
+print(f"y={gen_algebra('NB1+O2-B1+U2-C')}")
+print(f"y={gen_algebra('NB1+O2-B3+U4-O5-U6-B1-O6-U2-B3+O4-U5-C')}")
+#+end_src
+
+#+results:
+: y=inv(R2(y,x),R1(y,x))
+: y=R2(y,x)
+: y=inv(inv(R2(inv(R3(y,x),R3(x,y)),R3(x,y)),R1(inv(R3(y,x),R3(x,y)),R3(x,y))),R3(y,x))
+
+***** Results
+
+For algorithm 1, I am currently generating gauss codes for over/under
+crossings, and bonds. Here are some results:
+  + 5awl
+    - Gauss code: 'NO1-O2+O3+U1-U2+U3+C'
+    - [[./images/5awl_intersection.png][2D Projection]]
+  + 3nir
+    - Gauss code:
+      'NB1+B2+O3-O4-O5+O6+O7-U3-U4-U5+O8+U7-U6+U8+O9+B10+U9+U11+U12+B10-O12+O11+B2-B1+C'
+    - [[./images/3nir_proj.png][2D Projection]]
+  + 1k8h
+    - Gauss code:
+      'NU1-U2+U3+U4-U5+U6-O6+U7+O7+O5+O4+O2+O8+O9-O10-O11+O12+O13+O14-U14-U13-U12+U11+U15-U16-U9-U17+U18-U19+U20-O21+U22+O23-O24-O25-O26-O27+U23-U28-U21+U29-U30+U27+U31-U32-U25-U24-O32-U26-O31-O29-O30+O22+O28-O20-O19+O18-O17+O3+U8+U33-O1-O15+O16-U10-O33-C'
+    - [[./images/1k8h_proj.png][2D projection]]
+
+For algorithm 2, I hand wrote gauss codes for the examples and verified
+that the resulting algebraic expression were correct.
+  + Example 1:
+    - Gauss code: 'NB1+O2-B1+U2-C'
+    - Expression: 'y=R2(y,x)'
+    - [[./images/example1.png][2d projection]]
+  + Example 2:
+    - Gauss code: 'NB1+U2-B1+O2-C'
+    - Expression: 'y=inv(R2(y,x),R1(y,x))'
+    - [[./images/example2.png][2d projection]]
+  + Example 3:
+    - Gauss code: 'NB1+O2-B3+U4-O5-U6-B1-O6-U2-B3+O4-U5-C'
+    - Expression:
+      'y=inv(inv(R2(inv(R3(y,x),R3(x,y)),R3(x,y)),R1(inv(R3(y,x),R3(x,y)),R3(x,y))),R3(y,x))'
+    - [[./images/example3.png][2d projection]]
+
+What to do going forward:
+  + Evaluate the algebraic expressions
+  + Test similar and different topologies of proteins to see how they
+    categorize
+  + Add beta sheets
+  + Fix issue with orientation of bonds
