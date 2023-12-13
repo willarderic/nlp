@@ -2,10 +2,12 @@ from os import link
 from Bio.PDB.PDBParser import PDBParser
 import matplotlib.pyplot as plt
 import math
+from re import findall
+from sympy import *
 
 RESIDUE_NAMES = ["ARG", "HIS", "LYS", "ASP", "GLU", "SER", "THR", "ASN", "GLN", "CYS", "SEC", "GLY", "PRO", "ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TYR", "TRP"]
 
-protein_name = "5awl"
+protein_name = "3nir"
 
 structure_id = protein_name
 filename = f"/Users/ericwillard/School/bioinfo/project/pdb/{protein_name}.pdb"
@@ -28,7 +30,7 @@ for res in structure.get_residues():
     # Change this from blacklist to whitelist (only accept the 20 amino acids, nothing else)
     if res.get_resname() in RESIDUE_NAMES:
         residues.append(res.get_resname())
-
+        print(list(res.get_atoms())[0])
         x, y, z = list(res.get_atoms())[0].get_coord()
         xs.append(x)
         ys.append(y)
@@ -148,8 +150,11 @@ for i, line1 in enumerate(lines):
                         bond = ss_bonds[k]
                 if bond != None:
                     if not bond in bond_to_id.keys():
+                        orientation = '+'
+                        if getLineAngle(line1) > math.pi:
+                            orientation = '-'
                         bond_to_id[bond] = counter
-                        gauss_code += 'B' + str(counter) + '+'
+                        gauss_code += 'B' + str(counter) + orientation
                         counter += 1
 
             bond = None
@@ -163,25 +168,31 @@ for i, line1 in enumerate(lines):
                         bond_start_line = lines[bond[0]]
                         x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
                         x2, y2 = bond_start_line[1][0] - bond_start_line[0][0], bond_start_line[1][1] - bond_start_line[0][1]
-                        
+                        line_start_angle = getLineAngle(bond_start_line)
                         dot_prod = x1 * x2  + y1 * y2
-                        print(f"<({x1}, {y1}), ({x2}, {y2})> = {dot_prod}")
-                        if dot_prod >= 0:
+                        if dot_prod >= 0 and line_start_angle <= math.pi:
                             gauss_code += "B" + str(counter) + "+"
-                        else:
+                        elif dot_prod >= 0 and line_start_angle > math.pi:
                             gauss_code += "B" + str(counter) + "-"
+                        elif dot_prod < 0 and line_start_angle <= math.pi:
+                            gauss_code += "B" + str(counter) + "-"
+                        else:
+                            gauss_code += "B" + str(counter) + "+"
                         counter += 1
                     elif bond in bond_to_id.keys() and bond_to_id[bond] != None:
                         bond_start_line = lines[bond[0]]
                         x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
                         x2, y2 = bond_start_line[1][0] - bond_start_line[0][0], bond_start_line[1][1] - bond_start_line[0][1]
-                        
+                        line_start_angle = getLineAngle(bond_start_line)
                         dot_prod = x1 * x2  + y1 * y2
-                        print(f"<({x1}, {y1}), ({x2}, {y2})> = {dot_prod}")
-                        if dot_prod >= 0:
+                        if dot_prod >= 0 and line_start_angle <= math.pi:
                             gauss_code += "B" + str(bond_to_id[bond]) + "+"
-                        else:
+                        elif dot_prod >= 0 and line_start_angle > math.pi:
                             gauss_code += "B" + str(bond_to_id[bond]) + "-"
+                        elif dot_prod < 0 and line_start_angle <= math.pi:
+                            gauss_code += "B" + str(bond_to_id[bond]) + "-"
+                        else:
+                            gauss_code += "B" + str(bond_to_id[bond]) + "+"
                         bond_to_id[bond] = None
 
             if intersection := line_intersection(line1, line2):
@@ -240,7 +251,11 @@ def gen_algebra(gauss_code):
     add_equals_y = False
     symbol_table = {}
     gauss_code = gauss_code[1:len(gauss_code)-1]
-    arc_ends = [(gauss_code[i:i+3]) for i in range(0, len(gauss_code), 3)]
+
+    # When index gets above 9, cutting every 3 characters doesnt work  
+    #arc_ends = [(gauss_code[i:i+3]) for i in range(0, len(gauss_code), 3)]
+    # Use regex instead
+    arc_ends = findall(r'[B|O|U]{1}\d+[-|+]{1}', gauss_code)
     # Create a map of arc ends so that I can find whether a bond is positive or negative
     arc_end_map = {}
     bond_tracker = {}
@@ -268,15 +283,15 @@ def gen_algebra(gauss_code):
             arc_end_map[(arc_end, i)] = found_key
             arc_end_map[found_key] = (arc_end, i)
 
-    print(arc_end_map)
-    print(x_start, y_start)
+    # print(arc_end_map)
+    # print(x_start, y_start)
     n = 0
     expr = 'x'
     swp_expr = 'y'
     idx = x_start
     swp_idx = y_start
     while n < len(arc_ends) + 1:
-        print(n, idx, swp_idx, symbol_table)
+        # print(n, idx, swp_idx, symbol_table)
         if idx >= len(arc_ends) or idx == swp_idx:
             tmp = idx
             idx = swp_idx
@@ -314,16 +329,21 @@ def gen_algebra(gauss_code):
                 op = 'op'
             elif arc_end[2] == '-':
                 op = 'inv'
-            expr = f"{op}({expr},{symbol_table[arc_end_map[(arc_end, idx)]]})"
+
+            expr = f"{expr} {symbol_table[arc_end_map[(arc_end, idx)]]} {op}"
         elif arc_end[0] == 'B':
             linked_arc_end, linked_arc_end_idx = arc_end_map[(arc_end, idx)]
+            swap_params = False
             if linked_arc_end_idx > idx:
                 if arc_end[2] == '+' and linked_arc_end[2] == '+':
-                    op = 'R1'
-                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
                     op = 'R2'
+                    swap_params = True
+                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
+                    op = 'R1'
+                    swap_params = False
                 else:
                     op = 'R3'
+                    swap_params = False
                 _, other_idx = arc_end_map[(arc_end, idx)]
                 operand = ''
                 if other_idx == y_start:
@@ -332,14 +352,20 @@ def gen_algebra(gauss_code):
                     operand = 'x'
                 else:
                     operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
-                expr = f"{op}({expr},{operand})"
+                if swap_params:
+                    expr = f"{operand} {expr} {op}"
+                else:
+                    expr = f"{expr} {operand} {op}"
             elif linked_arc_end_idx < idx:
                 if arc_end[2] == '+' and linked_arc_end[2] == '+':
-                    op = 'R2'
-                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
                     op = 'R1'
+                    swap_params = False
+                elif arc_end[2] == '-' and linked_arc_end[2] == '-':
+                    op = 'R2'
+                    swap_params = True
                 else:
                     op = 'R3'
+                    swap_params = False
                 _, other_idx = arc_end_map[(arc_end, idx)]
                 operand = ''
                 if other_idx == y_start:
@@ -348,15 +374,106 @@ def gen_algebra(gauss_code):
                     operand = 'x'
                 else:
                     operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
-                expr = f"{op}({expr},{operand})"
+                if swap_params:
+                    expr = f"{operand} {expr} {op}"
+                else:
+                    expr = f"{expr} {operand} {op}"
         
         # Handles the over crossing as well
         symbol_table[(arc_end, idx)] = expr
         idx += 1
         n += 1
+    return symbol_table[arc_ends[y_start - 1], y_start - 1]
+print(f"y={gen_algebra('NB1+U2-B1+O2-C')}")
+print(f"y={gen_algebra('NB1+O2-B1+U2-C')}")
+print(f"y={gen_algebra('NB1+O2-B3+U4-O5-U6-B1-O6-U2-B3+O4-U5-C')}")
+print(f"y={gen_algebra('NB1+U2-B3+O4-U5-O6-B1-U6-O2-B3+U4-O5-C')}")
 
-gen_algebra('NB1+U2-B1+O2-C')
+def egcd(a, b):
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        g, y, x = egcd(b % a, a)
+        return (g, x - (b // a) * y, y)
 
+def modinv(a, m):
+    g, x, y = egcd(a, m)
+    if g != 1:
+        return None
+    else:
+        return x % m
+
+def prerocess_var(s, x, y):
+    if s == 'x':
+        return x
+    if s == 'y':
+        return y
+    return s
+
+# function to evaluate reverse polish notation 
+def evaluate(expression, a_in, b_in, n, m_in):
+    print(expression)
+    # A = a^-1
+    x, y, a, b, m, A = symbols("x y a b m A")
+
+    op = a * x + (1 - a) * y
+    inv =  A * x + (1 - A) * y
+    R1 = b * x + (1 - b) * y
+    R2 = a * (1 - b) * x + (b + (1 - a) * (1 - b)) * y
+    R3 = m * x + (1 - m) * y
+
+    op = op.subs(a, a_in)
+    inv = inv.subs(A, modinv(a_in, n))
+    R1 = R1.subs(b, b_in)
+    R2 = R2.subs([(a, a_in), (b, b_in)], simultaneous=True)
+    print(R2)
+    R3 = R3.subs(m, m_in)
+
+    expression = expression.split() 
+    expression = [prerocess_var(e, x, y) for e in expression]
+    stack = [] 
+        
+    # RPN Evaluation
+    for ele in expression:
+        if ele not in ['op', 'inv', 'R1', 'R2', 'R3']:
+            stack.append(ele)
+        else:
+            right = stack.pop() 
+            left = stack.pop()
+
+            if ele == 'op':
+                stack.append(op.subs([(x, left), (y, right)], simultaneous=True))
+            elif ele == 'inv':
+                stack.append(inv.subs([(x, left), (y, right)], simultaneous=True))
+            elif ele == 'R1': 
+                stack.append(R1.subs([(x, left), (y, right)], simultaneous=True)) 
+            elif ele == 'R2': 
+                stack.append(R2.subs([(x, left), (y, right)], simultaneous=True)) 
+            elif ele == 'R3':
+                stack.append(R3.subs([(x, left), (y, right)], simultaneous=True))
+        
+    # return final answer. 
+    return stack.pop() 
+
+def calc_colorings(expression, a, b, n, m):
+    x, y = symbols('x y')
+    equation = evaluate(expression, a, b, n, m)
+    print(f'Equation={equation}')
+    count = 0
+    for i in range(n):
+        for j in range(n):
+            result = equation.subs([(x, i), (y, j)])
+            equals = True if (result % n) == j else False
+            # print(f'{j}={result % n} is {equals}')
+            if equals:
+                count += 1
+
+    print('Number of colorings =', count)
+
+calc_colorings(gen_algebra('NB1+U2-B1+O2-C'), 8, 2, 15, 6)
+calc_colorings(gen_algebra('NB1+O2-B1+U2-C'), 8, 2, 15, 6)
+calc_colorings(gen_algebra('NB1+O2-B3+U4-O5-U6-B1-O6-U2-B3+O4-U5-C'), 7, 8, 15, 6)
+calc_colorings(gen_algebra(gauss_code), 8, 2, 15, 6)
 # print(intersections)
 # Draw 2D projection
 # plt.clf()
@@ -372,6 +489,8 @@ gen_algebra('NB1+U2-B1+O2-C')
 
 # plt.plot(ys, zs)
 # plt.scatter(*zip(*intersections), color='red')
+# plt.text(ys[0], zs[0], "N")
+# plt.text(ys[-1], zs[-1], "C")
 # for bl in bond_lines:
 #     plt.plot([bl[0][0], bl[1][0]], [bl[0][1], bl[1][1]], color="purple")
 

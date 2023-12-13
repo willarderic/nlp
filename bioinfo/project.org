@@ -282,7 +282,6 @@ To test the results, I will split testing into 3 phases:
   the projection more smooth?
   
 
-
 ** Milestone 3 & 4
 
 *** Introduction
@@ -303,7 +302,7 @@ popular invariant and the rest of the algebraic objects that are introduced
 will be used to color knots. A /quandle/ [cite:@joyce1982classifying] was an
 invariant introduced in 1982 which is an algebraic object. This algebraic
 object allows for orientation of a knot. A /coloring/ of an oriented knot
-projection by a quandle is an assignment value to each arc, where an /arc/
+projection by a quandle is an assignment of a value to each arc, where an /arc/
 is defined as a part of strand that both starts and ends at an
 undercrossing, but going over zero or many crossings as we like (Start at
 beginning of knot and end at end). 
@@ -364,6 +363,8 @@ get two more types of Reidemeister moves
   + [[./images/type5.png][Type V]]
 
 **** Gauss Codes
+Example with no explanation:
+'NB1+B2+O3-O4-O5+O6+O7-U3-U4-U5+O8+U7-U6+U8+O9+B10+U9+U11+U12+B10-O12+O11+B2-B1+C'
 
 Gauss codes we introduced to represent knot projections using only symbols
 instead of diagrams. This allows portability and simplicity in the
@@ -387,7 +388,7 @@ start from the N-terminus of a protein and follow the strand along until we
 get to a bond, we will denote the first connection of the bond and strand
 as positive, '+'. When we continue along the strand and find where the bond
 connects to the strand again, we will mark with a 'B' once again and if the
-strand runs parellel to the strand the bond first occurred, we will mark
+strand runs parallel to the strand the bond first occurred, we will mark
 the code positively with a '+', and if not (i.e. anti-parallel), we will
 mark it negatively with a '-'.
 
@@ -453,7 +454,7 @@ as follows:
  as long as p divides m and q divides $(m - 1$ or p divides $(m - 1) and q
  divides m.
 
-**** Algorithm
+*** Algorithm
 
 I have decided to split my algorithm into two separate algorithms. The
 first algorithm is going to parse the PDB file and generate a gauss code
@@ -484,7 +485,9 @@ a positive. Then if the line on the other side runs parallel, it will be
 annotate with the same '-'. If it is in quadrant 1 or 2 it will be marked
 '+' and the parallel strand will be marked '+' 
 
-***** Algorithm 1
+
+
+**** Algorithm 1
 *Algorithm 1: Generate gauss codes from 3D positions of amino acids*
 lines = all the lines created by connected sequential points together
 starting from the N-terminus
@@ -530,16 +533,18 @@ for line1 in lines
 return gauss_code
 *End Algorithm 1*
 
-***** Code for Algorithm 1
+**** Code for Algorithm 1
 #+begin_src python :results output
 from os import link
 from Bio.PDB.PDBParser import PDBParser
 import matplotlib.pyplot as plt
 import math
+from re import findall
+from sympy import *
 
 RESIDUE_NAMES = ["ARG", "HIS", "LYS", "ASP", "GLU", "SER", "THR", "ASN", "GLN", "CYS", "SEC", "GLY", "PRO", "ALA", "VAL", "ILE", "LEU", "MET", "PHE", "TYR", "TRP"]
 
-protein_name = "5awl"
+protein_name = "3nir"
 
 structure_id = protein_name
 filename = f"/Users/ericwillard/School/bioinfo/project/pdb/{protein_name}.pdb"
@@ -601,6 +606,7 @@ def line_intersection(line1, line2):
 
 
 points = list(zip(ys, zs))
+# print("Points", points)
 lines = []
 for i in range(len(points) - 1):
     lines.append((points[i], points[i+1]))
@@ -609,10 +615,12 @@ points3d = list(zip(xs, ys, zs))
 lines3d = []
 for i in range(len(points3d) - 1):
     lines3d.append((points3d[i], points3d[i+1]))
+# print(lines3d)
 
 def calculate_x(line3d, intersection2d):
     x1, y1, z1 = line3d[0]
     x2, y2, z2 = line3d[1]
+    # print(x1, y1, z1)
     x = ((x1 - x2) * (intersection2d[1] - z1) / (z1 - z2)) + x1
     return x
 
@@ -645,6 +653,7 @@ def getLineAngle(line):
     elif x < 0 and y == 0:
         return math.pi
 
+# print("Line", lines)
 intersections = []
 
 gauss_code = 'N'
@@ -663,8 +672,11 @@ for i, line1 in enumerate(lines):
                         bond = ss_bonds[k]
                 if bond != None:
                     if not bond in bond_to_id.keys():
+                        orientation = '+'
+                        if getLineAngle(line1) > math.pi:
+                            orientation = '-'
                         bond_to_id[bond] = counter
-                        gauss_code += 'B' + str(counter) + '+'
+                        gauss_code += 'B' + str(counter) + orientation
                         counter += 1
 
             bond = None
@@ -678,25 +690,31 @@ for i, line1 in enumerate(lines):
                         bond_start_line = lines[bond[0]]
                         x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
                         x2, y2 = bond_start_line[1][0] - bond_start_line[0][0], bond_start_line[1][1] - bond_start_line[0][1]
-                        
+                        line_start_angle = getLineAngle(bond_start_line)
                         dot_prod = x1 * x2  + y1 * y2
-                        print(f"<({x1}, {y1}), ({x2}, {y2})> = {dot_prod}")
-                        if dot_prod >= 0:
+                        if dot_prod >= 0 and line_start_angle <= math.pi:
                             gauss_code += "B" + str(counter) + "+"
-                        else:
+                        elif dot_prod >= 0 and line_start_angle > math.pi:
                             gauss_code += "B" + str(counter) + "-"
+                        elif dot_prod < 0 and line_start_angle <= math.pi:
+                            gauss_code += "B" + str(counter) + "-"
+                        else:
+                            gauss_code += "B" + str(counter) + "+"
                         counter += 1
                     elif bond in bond_to_id.keys() and bond_to_id[bond] != None:
                         bond_start_line = lines[bond[0]]
                         x1, y1 = line1[1][0] - line1[0][0], line1[1][1] - line1[0][1]
                         x2, y2 = bond_start_line[1][0] - bond_start_line[0][0], bond_start_line[1][1] - bond_start_line[0][1]
-                        
+                        line_start_angle = getLineAngle(bond_start_line)
                         dot_prod = x1 * x2  + y1 * y2
-                        print(f"<({x1}, {y1}), ({x2}, {y2})> = {dot_prod}")
-                        if dot_prod >= 0:
+                        if dot_prod >= 0 and line_start_angle <= math.pi:
                             gauss_code += "B" + str(bond_to_id[bond]) + "+"
-                        else:
+                        elif dot_prod >= 0 and line_start_angle > math.pi:
                             gauss_code += "B" + str(bond_to_id[bond]) + "-"
+                        elif dot_prod < 0 and line_start_angle <= math.pi:
+                            gauss_code += "B" + str(bond_to_id[bond]) + "-"
+                        else:
+                            gauss_code += "B" + str(bond_to_id[bond]) + "+"
                         bond_to_id[bond] = None
 
             if intersection := line_intersection(line1, line2):
@@ -711,31 +729,38 @@ for i, line1 in enumerate(lines):
 
                 theta1 = getLineAngle(line1)
                 theta2 = getLineAngle(line2)
+                # print(f"Theta1 = {theta1}, theta2 = {theta2}")
 
                 inter_num = intersection_to_id[(i, j)] if (i, j) in intersection_to_id.keys() else intersection_to_id[(j, i)]
 
                 if x1 > x2:
                     gauss_code += 'O' + str(inter_num)
+                    # print("Line 1 over line 2")
                     if theta2 < theta1 and theta2 > (theta1 - math.pi):
                         gauss_code += '-'
+                        # print("negative crossing")
                     else:
                         gauss_code += '+'
+                        # print("positive crossing")
                 else:
                     gauss_code += 'U' + str(inter_num)
+                    # print("Line 2 over line 1")
                     if theta2 < theta1 and theta2 > (theta1 - math.pi):
                         gauss_code += '+'
+                        # print("positive crossing")
                     else:
                         gauss_code += '-'
-
+                        # print("negative crossing")
+               
 gauss_code += 'C'
 print(gauss_code)
 #+end_src
 
 #+results:
-: Number of residues = 22
-: NO1-O2+O3+U1-U2+U3+C
+: Number of residues = 148
+: NB1-B2-O3-O4-O5+O6+O7-U3-U4-U5+O8+U7-U6+U8+O9+B10+U9+U11+U12+B10-O12+O11+B2+B1-C
 
-***** Algorithm 2
+**** Algorithm 2
 Create a symbol table to keep track of arc values.
 Have a mapping between arc ends called with the same middle n value. Call
 these /linked/ arc ends
@@ -772,13 +797,18 @@ prev_expr)
 linked_prev_expr)
        (c) Else store R3(prev_expr, linked_prev_expr)
 
-***** Code for Algorithm 2
+**** Code for Algorithm 2
 #+begin_src python :results output
+from re import findall
 def gen_algebra(gauss_code):
     add_equals_y = False
     symbol_table = {}
     gauss_code = gauss_code[1:len(gauss_code)-1]
-    arc_ends = [(gauss_code[i:i+3]) for i in range(0, len(gauss_code), 3)]
+
+    # When index gets above 9, cutting every 3 characters doesnt work  
+    #arc_ends = [(gauss_code[i:i+3]) for i in range(0, len(gauss_code), 3)]
+    # Use regex instead
+    arc_ends = findall(r'[B|O|U]{1}\d+[-|+]{1}', gauss_code)
     # Create a map of arc ends so that I can find whether a bond is positive or negative
     arc_end_map = {}
     bond_tracker = {}
@@ -852,7 +882,8 @@ def gen_algebra(gauss_code):
                 op = 'op'
             elif arc_end[2] == '-':
                 op = 'inv'
-            expr = f"{op}({expr},{symbol_table[arc_end_map[(arc_end, idx)]]})"
+
+            expr = f"{expr} {symbol_table[arc_end_map[(arc_end, idx)]]} {op}"
         elif arc_end[0] == 'B':
             linked_arc_end, linked_arc_end_idx = arc_end_map[(arc_end, idx)]
             swap_params = False
@@ -875,9 +906,9 @@ def gen_algebra(gauss_code):
                 else:
                     operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
                 if swap_params:
-                    expr = f"{op}({operand},{expr})"
+                    expr = f"{operand} {expr} {op}"
                 else:
-                    expr = f"{op}({expr},{operand})"
+                    expr = f"{expr} {operand} {op}"
             elif linked_arc_end_idx < idx:
                 if arc_end[2] == '+' and linked_arc_end[2] == '+':
                     op = 'R1'
@@ -897,9 +928,9 @@ def gen_algebra(gauss_code):
                 else:
                     operand = symbol_table[(arc_ends[other_idx - 1], other_idx - 1)]
                 if swap_params:
-                    expr = f"{op}({operand},{expr})"
+                    expr = f"{operand} {expr} {op}"
                 else:
-                    expr = f"{op}({expr},{operand})"
+                    expr = f"{expr} {operand} {op}"
         
         # Handles the over crossing as well
         symbol_table[(arc_end, idx)] = expr
@@ -909,14 +940,120 @@ def gen_algebra(gauss_code):
 print(f"y={gen_algebra('NB1+U2-B1+O2-C')}")
 print(f"y={gen_algebra('NB1+O2-B1+U2-C')}")
 print(f"y={gen_algebra('NB1+O2-B3+U4-O5-U6-B1-O6-U2-B3+O4-U5-C')}")
+# Bug when running the following gauss code.
+#print(f"y={gen_algebra('NB1+U2-B3+O4-U5-O6-B1-U6-O2-B3+U4-O5-C')}")
 #+end_src
 
 #+results:
-: y=inv(R2(y,x),R1(y,x))
-: y=R2(y,x)
-: y=inv(inv(R2(inv(R3(y,x),R3(x,y)),R3(x,y)),R1(inv(R3(y,x),R3(x,y)),R3(x,y))),R3(y,x))
+: y=y x R2 y x R1 inv
+: y=y x R2
+: y=y x R3 x y R3 inv x y R3 R2 y x R3 x y R3 inv x y R3 R1 inv y x R3 inv
 
-***** Results
+
+**** Evaluating the algebra
+I have changed the results of the algebra generation to output postfix
+notation
+(a.k.a. [[https://en.wikipedia.org/wiki/Reverse_Polish_notation][reverse
+polish notation]]). This change of output makes the transformation of this
+expression into group operations much simpler. To do this, I implemented a
+simple postfix notation parser to output the correct expression based on if
+the operation is 'op', 'inv', 'R1', 'R2', or 'R3'. Their expressions can be
+found in the paper or code. Below is the python code for this task.
+
+#+begin_src python :results output
+from sympy import *
+def egcd(a, b):
+    if a == 0:
+        return (b, 0, 1)
+    else:
+        g, y, x = egcd(b % a, a)
+        return (g, x - (b // a) * y, y)
+
+def modinv(a, m):
+    g, x, y = egcd(a, m)
+    if g != 1:
+        return None
+    else:
+        return x % m
+
+def prerocess_var(s, x, y):
+    if s == 'x':
+        return x
+    if s == 'y':
+        return y
+    return s
+
+# function to evaluate reverse polish notation 
+def evaluate(expression, a_in, b_in, n, m_in):
+    # A = a^-1
+    x, y, a, b, m, A = symbols("x y a b m A")
+
+    op = a * x + (1 - a) * y
+    inv =  A * x + (1 - A) * y
+    R1 = b * x + (1 - b) * y
+    R2 = a * (1 - b) * x + (b + (1 - a) * (1 - b)) * y
+    R3 = m * x + (1 - m) * y
+
+    op = op.subs(a, a_in)
+    inv = inv.subs(A, modinv(a_in, n))
+    R1 = R1.subs(b, b_in)
+    R2 = R2.subs([(a, a_in), (b, b_in)], simultaneous=True)
+    R3 = R3.subs(m, m_in)
+
+    expression = expression.split() 
+    expression = [prerocess_var(e, x, y) for e in expression]
+    stack = [] 
+        
+    # RPN Evaluation
+    for ele in expression:
+        if ele not in ['op', 'inv', 'R1', 'R2', 'R3']:
+            stack.append(ele)
+        else:
+            right = stack.pop() 
+            left = stack.pop()
+
+            if ele == 'op':
+                stack.append(op.subs([(x, left), (y, right)], simultaneous=True))
+            elif ele == 'inv':
+                stack.append(inv.subs([(x, left), (y, right)], simultaneous=True))
+            elif ele == 'R1': 
+                stack.append(R1.subs([(x, left), (y, right)], simultaneous=True)) 
+            elif ele == 'R2': 
+                stack.append(R2.subs([(x, left), (y, right)], simultaneous=True)) 
+            elif ele == 'R3':
+                stack.append(R3.subs([(x, left), (y, right)], simultaneous=True))
+        
+    # return final answer. 
+    return stack.pop() 
+
+def calc_colorings(expression, a, b, n, m):
+    x, y = symbols('x y')
+    equation = evaluate(expression, a, b, n, m)
+    print(f'Equation={equation}')
+    count = 0
+    for i in range(n):
+        for j in range(n):
+            result = equation.subs([(x, i), (y, j)])
+            equals = True if (result % n) == j else False
+            if equals:
+                count += 1
+
+    print('Number of colorings =', count)
+
+calc_colorings('y x R2 y x R1 inv', 8, 2, 15, 6)
+calc_colorings('y x R2', 8, 2, 15, 6)
+calc_colorings('y x R3 x y R3 inv x y R3 R2 y x R3 x y R3 inv x y R3 R1 inv y x R3 inv', 7, 8, 15, 6)
+#+end_src
+
+#+results:
+: Equation=19*x - 18*y
+: Number of colorings = 15
+: Equation=9*x - 8*y
+: Number of colorings = 45
+: Equation=1362785*x - 1362784*y
+: Number of colorings = 75
+
+**** Results
 
 For algorithm 1, I am currently generating gauss codes for over/under
 crossings, and bonds. Here are some results:
@@ -948,9 +1085,77 @@ that the resulting algebraic expression were correct.
       'y=inv(inv(R2(inv(R3(y,x),R3(x,y)),R3(x,y)),R1(inv(R3(y,x),R3(x,y)),R3(x,y))),R3(y,x))'
     - [[./images/example3.png][2d projection]]
 
+For the postfix parser, I used the outputs from the gauss code parser. I
+only checked against the ones used in the paper, but I was able to get the
+same results as in the paper!
+  + Example 7.1 from the paper
+    - P1
+      - Expression y=R2(y,x)
+      - Simplifies to 6(y - x) in the paper
+      - 9*x - 8*y=y is the equation I get from my code.
+        - If we do some algebra, we can see that 9x - 9y = 0 -> 9(x - y) ->
+          -6(x - y) = 0 (mod 15) -> 6(y - x) = 0.
+	- Therefore I get an equivalent expression to what the paper has
+          and I acquire the same number of colorings (45) as the paper
+          does.
+    - P2
+      - Expression y=inv(R2(y,x), R1(y,x))
+      - Simplifies to 11(y - x) = 0
+      - 19x - 18y = y is the equation I get from my code, which gives 15
+        colorings total, same as the paper!
+  + Example 7.2
+    - P1
+      - Expression
+        y=inv(inv(R2(inv(R3(y,x),R3(x,y)),R3(x,y)),R1(inv(R3(y,x),R3(x,y)),R3(x,y))),R3(y,x))
+      - Simplifies to 5(x - y) = 0
+      - 1362785*x - 1362784*y = y is the equation I get from the code, when
+        evaluated for all x, y in Z_15 gives 75 total colorings.
+    - P2 is unfortunately bugged at the moment.
+
+There seems to be a bug in my algorithm to generate the algebra from the
+gauss codes. The algorithm can get into a state where it is unable to
+calculate what expression should be at a certain index. For example:
+
+NB1-B2-O3-O4-O5+O6+O7-U3-U4-U5+O8+U7-U6+U8+O9+B10+U9+U11+U12+B10-O12+O11+B2+B1-C
+ ^                                                                          ^
+ p1                                                                       p2
+
+The second pointer is already at the end of the gauss code in this
+example. Therefore, we never have anything to swap to for pointer 1.
+
+NB1-B2-O3-O4-O5+O6+O7-U3-U4-U5+O8+U7-U6+U8+O9+B10+U9+U11+U12+B10-O12+O11+B2+B1-C
+                                              ^
+					      p1
+
+When pointer 1 gets to B10+, to generate the algebra here B10+ would need
+the expression from U12+, but that is after the p1 pointer and before the
+p2 pointer. Thus an expression is never generated for it and the algorithm
+gets stuck (errors out in python). Unfortunately I do not have enough time
+to fix this bug. An idea to fix it would be to look into generating a graph
+to see the connections and generate expressions until each node has a
+value.
+
+*** Conclusion
+
+I have built a program that can take a PDB file of a protein and categorize
+it based on a knot invariant called an oriented bondle. To do this, I use
+3D protein information to create a 2D projection and generate algebra based
+on the projection. The algebra can be further used to calculate the number
+of colorings of the projection therefore categorizing the protein
+topologically. This program works most of the examples in the paper, but is
+currently suffering from a bug causing to function correctly in all
+cases. I expect that if one could generate the algebra from the gauss codes
+correctly, the algorithm would be able to perform its intended
+purpose. 
+
+*** Future work
 What to do going forward:
-  + Evaluate the algebraic expressions
+  + +Evaluate the algebraic expressions+
   + Test similar and different topologies of proteins to see how they
     categorize
   + Add beta sheets
-  + Fix issue with orientation of bonds
+  + +Fix issue with orientation of bonds+
+  + New bug in algorithm to parse gauss codes unfortunately :(
+    
+    
+  
